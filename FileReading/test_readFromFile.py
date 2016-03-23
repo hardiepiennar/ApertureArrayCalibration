@@ -2,24 +2,24 @@ import unittest
 
 import numpy as np
 
-import FileReading.readFromFile as rff
+import readFromFile as rFF
 
 
 class TestReadFarfieldFile(unittest.TestCase):
     def test_readThetaAndPhiRangeParser(self):
         line = "Theta_Range: 0 1.57 11"
-        start, stop, steps = rff.parseAngleRangeLine(line)
+        start, stop, steps = rFF.parseAngleRangeLine(line)
         self.assertEquals(start, 0)
         self.assertEquals(stop, 1.57)
         self.assertEquals(steps, 11)
 
     def test_readFarfieldScanDataFileData(self):
         # Open file and get variables
-        filename = "FileReading/testFarfieldScanFile.dat"
-        theta, phi, data, frequency, txPower, distance = rff.readFarfieldScanDataFile(filename)
+        filename = "testFarfieldScanFile.dat"
+        theta, phi, data, f, txPower, distance = rFF.read_farfieldscan_datafile(filename)
 
         # Check that header data is correct
-        self.assertEquals(frequency, 9182500)
+        self.assertEquals(f, 9182500)
         self.assertEquals(txPower, 15)
         self.assertEquals(distance, 100)
 
@@ -36,16 +36,16 @@ class TestReadFarfieldFile(unittest.TestCase):
 
     def test_checkFarfieldScanDataFileReturnTypes(self):
         # Open file and get variables
-        filename = "FileReading/testFarfieldScanFile.dat"
-        theta, phi, data, frequency, txPower, distance = rff.readFarfieldScanDataFile(filename)
+        filename = "testFarfieldScanFile.dat"
+        theta, phi, data, f, txPower, distance = rFF.read_farfieldscan_datafile(filename)
 
         # Check if arrays are of type numpy
         self.assertEquals(np.array([0]).__class__, theta.__class__)
         self.assertEquals(np.array([0]).__class__, phi.__class__)
         self.assertEquals(np.array([0]).__class__, data.__class__)
 
-        # Check if frequency, txPower and distance are of correct types
-        self.assertEquals(int(0).__class__, frequency.__class__)
+        # Check if f, txPower and distance are of correct types
+        self.assertEquals(int(0).__class__, f.__class__)
         self.assertEquals(float(0.0).__class__, txPower.__class__)
         self.assertEquals(float(0.0).__class__, distance.__class__)
 
@@ -53,11 +53,11 @@ class TestReadFarfieldFile(unittest.TestCase):
 class TestReadFEKOFarfieldFile(unittest.TestCase):
     def testReadFEKOFarfieldData(self):
         # Read FEKO antenna patter from file
-        filename = "FileReading/testAntennaPatternFile.ffe"
-        theta, phi, gainTheta, gainPhi, frequency= rff.readFEKOFarfieldDataFile(filename)
+        filename = "testAntennaPatternFile.ffe"
+        theta, phi, gain_theta, gain_phi, f = rFF.read_fekofarfield_datafile(filename)
 
-        # Check that frequency data is correct in Hz
-        self.assertEquals(frequency, 9182500)
+        # Check that f data is correct in Hz
+        self.assertEquals(f, 9182500)
 
         # Check that arrays are correct
         self.assertEquals(theta[0], 0.00000000E+00)
@@ -66,72 +66,87 @@ class TestReadFEKOFarfieldFile(unittest.TestCase):
         self.assertEquals(phi[0], 0.00000000E+00)
         self.assertEquals(phi[-1], 3.60000000E+02)
         self.assertEquals(len(phi), 37*73)
-        self.assertEquals(gainTheta[0], -1.00000000E+03)
-        self.assertEquals(gainTheta[-1], -3.10789956E+02)
-        self.assertEquals(len(gainTheta), 37*73)
-        self.assertEquals(gainPhi[0], 1.42922660E+00)
-        self.assertEquals(gainPhi[-1], 1.42922655E+00)
-        self.assertEquals(len(gainPhi), 37*73)
+        self.assertEquals(gain_theta[0], -1.00000000E+03)
+        self.assertEquals(gain_theta[-1], -3.10789956E+02)
+        self.assertEquals(len(gain_theta), 37*73)
+        self.assertEquals(gain_phi[0], 1.42922660E+00)
+        self.assertEquals(gain_phi[-1], 1.42922655E+00)
+        self.assertEquals(len(gain_phi), 37*73)
 
     def testReadFEKOFarfieldDataReturnTypes(self):
         # Read FEKO antenna patter from file
-        filename = "FileReading/testAntennaPatternFile.ffe"
-        theta, phi, gainTheta, gainPhi, frequency = rff.readFEKOFarfieldDataFile(filename)
+        filename = "testAntennaPatternFile.ffe"
+        theta, phi, gain_theta, gain_phi, f = rFF.read_fekofarfield_datafile(filename)
 
         # Check if arrays are of type numpy
         self.assertEquals(np.array([0]).__class__, theta.__class__)
         self.assertEquals(np.array([0]).__class__, phi.__class__)
-        self.assertEquals(np.array([0]).__class__, gainTheta.__class__)
-        self.assertEquals(np.array([0]).__class__, gainPhi.__class__)
+        self.assertEquals(np.array([0]).__class__, gain_theta.__class__)
+        self.assertEquals(np.array([0]).__class__, gain_phi.__class__)
 
-        # Check if frequency, txPower and distance are of correct types
-        self.assertEquals(float(0).__class__, frequency.__class__)
+        # Check if f, txPower and distance are of correct types
+        self.assertEquals(float(0).__class__, f.__class__)
 
 
 class TestReadFEKONearfieldFile(unittest.TestCase):
 
     def testReadFEKONearfieldData(self):
         # Read FEKO nearfield from file
-        filename = "FileReading/testNearfieldPatternFile.efe"
-        x, y, z, Ex, Ey, Ez, frequency = rff.readFEKONearfieldDataFile(filename)
+        filename = "testNearfieldPatternFile.efe"
+        f, x, y, z, ex, ey, ez, no_samples = rFF.readFEKONearfieldDataFile(filename)
 
-        # Check that frequency data is correct in Hz
-        self.assertEquals(frequency, 1.00000000e9)
+        # Check that the no_samples vector is correct
+        self.assertEquals(no_samples[0], 2)
+        self.assertEquals(no_samples[1], 3)
+        self.assertEquals(no_samples[2], 3)
+        self.assertEquals(no_samples[3], 1)
+        len_of_array = no_samples[0]*no_samples[1]*no_samples[2]*no_samples[3]
+        len_of_block = no_samples[1]*no_samples[2]*no_samples[3]
 
         # Check that arrays are correct
+        self.assertEquals(f[0], 1E9)
+        self.assertEquals(f[-1], 2E9)
+        self.assertEquals(len(f), len_of_array)
+
         self.assertEquals(x[0], -11.5)
-        self.assertEquals(x[-1], 11.5)
-        self.assertEquals(len(x), 16*16*1)
+        self.assertEquals(x[-1], 7.66666667E-01)
+        self.assertEquals(len(x), len_of_array)
+
         self.assertEquals(y[0], -11.5)
-        self.assertEquals(y[-1], 11.5)
-        self.assertEquals(len(y), 16*16*1)
+        self.assertEquals(y[-1], -11.6)
+        self.assertEquals(len(y), len_of_array)
+
         self.assertAlmostEquals(z[0], 2.69063189)
         self.assertAlmostEquals(z[-1], 2.69063189)
-        self.assertEquals(len(z), 16*16*1)
-        self.assertEquals(Ex[0], -1.54041147E-02 + 1j*4.01204394E-03)
-        self.assertEquals(Ex[-1], -1.53141019E-02 + 1j*3.95306420E-03)
-        self.assertEquals(len(Ex), 16*16*1)
-        self.assertEquals(Ey[0], 1.47913264E-02 - 1j*3.92015931E-03)
-        self.assertEquals(Ey[-1], 1.47058147E-02 - 1j*3.86364258E-03)
-        self.assertEquals(len(Ey), 16*16*1)
-        self.assertEquals(Ez[0], -2.83216437E-03 + 1j*1.08340531E-03)
-        self.assertEquals(Ez[-1], 2.81352121E-03 - 1j*1.07024549E-03)
-        self.assertEquals(len(Ez), 16*16*1)
+        self.assertEquals(len(z), len_of_array)
+
+        self.assertEquals(ex[0], -1.54041147E-02 + 1j*4.01204394E-03)
+        self.assertEquals(ex[len_of_block-1], 2.73158692E-02 + 1j*8.59837337E-03)
+        self.assertEquals(ex[len_of_block], -1.54041147E-02 + 1j*4.01204394E-03)
+        self.assertEquals(ex[-1], 2.73158692E-02 + 1j*8.59837337E-03)
+        self.assertEquals(len(ex), len_of_array)
+
+        self.assertEquals(ey[0], 1.47913264E-02 - 1j*3.92015931E-03)
+        self.assertEquals(ey[-1], 1.74954795E-03 + 1j*5.76822063E-04)
+        self.assertEquals(len(ey), len_of_array)
+
+        self.assertEquals(ez[0], -2.83216437E-03 + 1j*1.08340531E-03)
+        self.assertEquals(ez[-1], -3.57347990E-04 + 1j*-2.41266729E-06)
+        self.assertEquals(len(ez), len_of_array)
 
     def testReadFEKONearfieldDataReturnTypes(self):
         # Read FEKO antenna patter from file
-        filename = "FileReading/testNearfieldPatternFile.efe"
-        x, y, z, Ex, Ey, Ez, frequency = rff.readFEKONearfieldDataFile(filename)
+        filename = "testNearfieldPatternFile.efe"
+        x, y, z, ex, ey, ez, f, no_samples = rFF.readFEKONearfieldDataFile(filename)
 
         # Check if arrays are of type numpy
+        self.assertEquals(np.array([0]).__class__, f.__class__)
         self.assertEquals(np.array([0]).__class__, x.__class__)
         self.assertEquals(np.array([0]).__class__, y.__class__)
         self.assertEquals(np.array([0]).__class__, z.__class__)
-        self.assertEquals(np.array([0]).__class__, Ex.__class__)
-        self.assertEquals(np.array([0]).__class__, Ey.__class__)
-        self.assertEquals(np.array([0]).__class__, Ez.__class__)
+        self.assertEquals(np.array([0]).__class__, ex.__class__)
+        self.assertEquals(np.array([0]).__class__, ey.__class__)
+        self.assertEquals(np.array([0]).__class__, ez.__class__)
 
-        # Check if frequency, txPower and distance are of correct types
-        self.assertEquals(float(0).__class__, frequency.__class__)
 if __name__ == '__main__':
     unittest.main()
