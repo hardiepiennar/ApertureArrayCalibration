@@ -28,6 +28,9 @@ def read_farfieldscan_datafile(filename):
     reader = csv.reader(file_handle, delimiter=' ')
 
     # Create array data structures
+    frequency = 0
+    distance = 0
+    tx_power = 0
     theta = []
     phi = []
     data = []
@@ -37,9 +40,11 @@ def read_farfieldscan_datafile(filename):
     for row in reader:
         string = '    '.join(row)
         if line_no == theta_range_line:
-            theta_start, theta_stop, theta_steps = parseAngleRangeLine(string)
+            # theta_start, theta_stop, theta_steps = parse_angle_range_line(string)
+            pass
         elif line_no == phi_range_line:
-            phi_start, phi_stop, phi_steps = parseAngleRangeLine(string)
+            # phi_start, phi_stop, phi_steps = parse_angle_range_line(string)
+            pass
         elif line_no == tx_power_line:
             tx_power = float(string.split()[1])
         elif line_no == distance_line:
@@ -61,7 +66,7 @@ def read_farfieldscan_datafile(filename):
     phi = np.array(phi)
     data = np.array(data)
 
-    return theta, phi, data, frequency, tx_power, distance
+    return [theta, phi, data, frequency, tx_power, distance]
 
 
 def read_fekofarfield_datafile(filename):
@@ -72,12 +77,18 @@ def read_fekofarfield_datafile(filename):
 
     # Header structure constants
     frequency_line = 1
+    no_theta_line = 3
+    no_phi_line = 4
 
     # Open farfield CSV file
     file_handle = open(filename)
     reader = csv.reader(file_handle, delimiter=' ')
 
     frequency = 0
+    no_f_samples = 0
+    no_theta_samples = 0
+    no_phi_samples = 0
+    f = []
     theta = []
     phi = []
     gain_theta = []
@@ -100,105 +111,125 @@ def read_fekofarfield_datafile(filename):
         # Read frequency from header
         if line_no == frequency_line:
             frequency = float(string.split()[1])
+            no_f_samples += 1
+        if line_no == no_theta_line:
+            no_theta_samples = float(string.split()[4])
+        if line_no == no_phi_line:
+            no_phi_samples = float(string.split()[4])
 
         # Read body into arrays
         if found_body_start and len(string) > 0:
             elements = string.split()
+            f.append(frequency)
             theta.append(float(elements[0]))
             phi.append(float(elements[1]))
             gain_theta.append(float(elements[6]))
             gain_phi.append(float(elements[7]))
 
+            # Check if this is the last row in the frequency
+            if len(theta) == no_theta_samples * no_phi_samples:
+                found_body_start = False
+                found_header_start = False
+                line_no = 0
+
         if found_header_start:
             line_no += 1
 
+    f = np.array(f)
     theta = np.array(theta)
     phi = np.array(phi)
     gain_theta = np.array(gain_theta)
     gain_phi = np.array(gain_phi)
 
-    return theta, phi, gain_theta, gain_phi, frequency
+    return f, theta, phi, gain_theta, gain_phi, [no_f_samples, no_theta_samples, no_phi_samples]
 
-def readFEKONearfieldDataFile(filename):
+
+def read_fekonearfield_datafile(filename):
     # Header structure constants
-    FREQUENCY_LINE = 1
-    NO_EX_LINE = 3
-    NO_EY_LINE = 4
-    NO_EZ_LINE = 5
+    frequency_line = 1
+    no_ex_line = 3
+    no_ey_line = 4
+    no_ez_line = 5
 
     # Open farfield CSV file
-    file = open(filename)
-    reader = csv.reader(file, delimiter=' ')
+    file_handle = open(filename)
+    reader = csv.reader(file_handle, delimiter=' ')
 
     frequency = 0
     no_f_samples = 0
+    no_ex_samples = 0
+    no_ey_samples = 0
+    no_ez_samples = 0
     f = []
     x = []
     y = []
     z = []
-    Ex = []
-    Ey = []
-    Ez = []
+    ex = []
+    ey = []
+    ez = []
 
     # Read through header and body
-    lineNo = 0
-    foundHeaderStart = False
-    foundBodyStart = False
+    line_no = 0
+    found_header_start = False
+    found_body_start = False
     for row in reader:
         string = '    '.join(row)
 
         # Only start reading when header start has been found
         if string.__contains__("#Request"):
-            foundHeaderStart = True
+            found_header_start = True
 
-        if foundHeaderStart and not string.__contains__('#'):
-            foundBodyStart = True
+        if found_header_start and not string.__contains__('#'):
+            found_body_start = True
 
         # Read header contents
-        if lineNo == FREQUENCY_LINE:
+        if line_no == frequency_line:
             frequency = float(string.split()[1])
             no_f_samples += 1
-        if lineNo == NO_EX_LINE:
+        if line_no == no_ex_line:
             no_ex_samples = float(string.split()[4])
-        if lineNo == NO_EY_LINE:
+        if line_no == no_ey_line:
             no_ey_samples = float(string.split()[4])
-        if lineNo == NO_EZ_LINE:
+        if line_no == no_ez_line:
             no_ez_samples = float(string.split()[4])
 
         # Read body into arrays
-        if foundBodyStart and len(string) > 0:
+        if found_body_start and len(string) > 0:
             elements = string.split()
             f.append(frequency)
             x.append(float(elements[0]))
             y.append(float(elements[1]))
             z.append(float(elements[2]))
-            Ex.append(float(elements[3]) + float(elements[4])*1j)
-            Ey.append(float(elements[5]) + float(elements[6])*1j)
-            Ez.append(float(elements[7]) + float(elements[8])*1j)
+            ex.append(float(elements[3]) + float(elements[4])*1j)
+            ey.append(float(elements[5]) + float(elements[6])*1j)
+            ez.append(float(elements[7]) + float(elements[8])*1j)
 
             # Check if this is the last row in the frequency
             if len(x) == no_ex_samples * no_ey_samples * no_ez_samples:
-                foundBodyStart = False
-                foundHeaderStart = False
-                lineNo = 0
+                found_body_start = False
+                found_header_start = False
+                line_no = 0
 
-        if foundHeaderStart:
-            lineNo += 1
+        if found_header_start:
+            line_no += 1
 
-    file.close()
+    file_handle.close()
 
     f = np.array(f)
     x = np.array(x)
     y = np.array(y)
     z = np.array(z)
-    Ex = np.array(Ex)
-    Ey = np.array(Ey)
-    Ez = np.array(Ez)
+    ex = np.array(ex)
+    ey = np.array(ey)
+    ez = np.array(ez)
 
-    return f, x, y, z, Ex, Ey, Ez, [no_f_samples, no_ex_samples, no_ey_samples, no_ez_samples]
+    return f, x, y, z, ex, ey, ez, [no_f_samples, no_ex_samples, no_ey_samples, no_ez_samples]
 
-def parseAngleRangeLine(line):
-    """Parse header line containing start, stop and number of steps"""
+
+def parse_angle_range_line(line):
+    """
+    Parse header line containing start, stop and number of steps
+    :param line - angle range text line from farfield file that needs to be parsed
+    """
     elements = str(line).split()
     return float(elements[1]), float(elements[2]), float(elements[3])
-
