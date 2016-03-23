@@ -57,7 +57,7 @@ class TestReadFEKOFarfieldFile(unittest.TestCase):
         f, theta, phi, gain_theta, gain_phi, no_samples = rFF.read_fekofarfield_datafile(filename)
 
         # Check that the no_samples vector is correct
-        self.assertEquals(no_samples[0], 2)
+        self.assertEquals(no_samples[0], 3)
         self.assertEquals(no_samples[1], 3)
         self.assertEquals(no_samples[2], 3)
         len_of_array = no_samples[0]*no_samples[1]*no_samples[2]
@@ -65,7 +65,7 @@ class TestReadFEKOFarfieldFile(unittest.TestCase):
 
         # Check that arrays are correct
         self.assertEquals(f[0], 9.18250000E+06)
-        self.assertEquals(f[-1], 10.18250000E+06)
+        self.assertEquals(f[-1], 11182500.0 )
         self.assertEquals(len(f), len_of_array)
         self.assertEquals(theta[0], 0.00000000E+00)
         self.assertEquals(theta[len_of_block-1], 4.50000000E+01)

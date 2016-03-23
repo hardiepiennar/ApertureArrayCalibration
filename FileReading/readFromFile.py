@@ -112,6 +112,7 @@ def read_fekofarfield_datafile(filename):
         if line_no == frequency_line:
             frequency = float(string.split()[1])
             no_f_samples += 1
+            print(frequency)
         if line_no == no_theta_line:
             no_theta_samples = float(string.split()[4])
         if line_no == no_phi_line:
@@ -127,7 +128,7 @@ def read_fekofarfield_datafile(filename):
             gain_phi.append(float(elements[7]))
 
             # Check if this is the last row in the frequency
-            if len(theta) == no_theta_samples * no_phi_samples:
+            if len(theta) % (no_theta_samples * no_phi_samples) == 0:
                 found_body_start = False
                 found_header_start = False
                 line_no = 0
@@ -205,7 +206,7 @@ def read_fekonearfield_datafile(filename):
             ez.append(float(elements[7]) + float(elements[8])*1j)
 
             # Check if this is the last row in the frequency
-            if len(x) == no_ex_samples * no_ey_samples * no_ez_samples:
+            if len(x) % (no_ex_samples * no_ey_samples * no_ez_samples) == 0:
                 found_body_start = False
                 found_header_start = False
                 line_no = 0
