@@ -112,7 +112,6 @@ def read_fekofarfield_datafile(filename):
         if line_no == frequency_line:
             frequency = float(string.split()[1])
             no_f_samples += 1
-            print(frequency)
         if line_no == no_theta_line:
             no_theta_samples = float(string.split()[4])
         if line_no == no_phi_line:

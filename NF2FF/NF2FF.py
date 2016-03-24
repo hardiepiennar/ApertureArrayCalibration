@@ -7,6 +7,7 @@ Hardie Pienaar
 """
 
 import numpy as np
+from scipy.interpolate import griddata
 
 
 def calc_recommended_sampling_param(d, m, p, z, lambd):
@@ -43,3 +44,19 @@ def calc_nearfield_bounds(f, d):
     stop = (2*d**2)/lambd
 
     return start, stop
+
+
+def transform_data_coord_to_grid(coordinates, values, resolution):
+    """
+    Transforms the given coordinated values to a grid format
+    :param coordinates: (x, y) coordinates of the values
+    :param values: values at (x,y) coordinates
+    :param resolution: number of points in return grid [x_axis, y_axis]
+    :return grid_x, grid_y, grid_data: data in a grid format
+    """
+    grid_y, grid_x = np.mgrid[np.min(coordinates[1]):np.max(coordinates[1]):1j*resolution[1],
+                              np.min(coordinates[0]):np.max(coordinates[0]):1j*resolution[0]]
+
+    grid_data = griddata(np.transpose(coordinates), values, (grid_x, grid_y), method='linear')
+
+    return grid_x, grid_y, grid_data
