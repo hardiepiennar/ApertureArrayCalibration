@@ -60,3 +60,14 @@ def transform_data_coord_to_grid(coordinates, values, resolution):
     grid_data = griddata(np.transpose(coordinates), values, (grid_x, grid_y), method='linear')
 
     return grid_x, grid_y, grid_data
+
+
+def calculate_total_gain(gain_theta, gain_phi):
+    """
+    Calculates the total gain in dB from its theta and phi components
+    :param gain_theta: theta gain in dB
+    :param gain_phi: phi gain in dB
+    :return: total gain in dB
+    """
+    gain = 20*np.log10(np.sqrt((10**(gain_theta/20))**2 + (10**(gain_phi/20))**2))
+    return gain

@@ -233,3 +233,39 @@ def parse_angle_range_line(line):
     """
     elements = str(line).split()
     return float(elements[1]), float(elements[2]), float(elements[3])
+
+
+def read_frequency_block_from_dataset(block, no_samples, theta, phi, gain_theta, gain_phi):
+    """
+    Extract a single frequency block from the dataset
+    :param block: block no to extract
+    :param no_samples: vector with array sizes
+    :param theta: theta dataset
+    :param phi: phi dataset
+    :param gain_theta: gain_theta dataset
+    :param gain_phi: gain_phi dataset
+    :return: datasets cut to selected frequency blocks
+    """
+    block_size = no_samples[1]*no_samples[2]
+    theta = theta[block_size*block:block_size*(block+1)]
+    phi = phi[block_size*block:block_size*(block+1)]
+    gain_theta = gain_theta[block_size*block:block_size*(block+1)]
+    gain_phi = gain_phi[block_size*block:block_size*(block+1)]
+
+    return theta, phi, gain_theta, gain_phi
+
+
+def get_phi_cut(trace_no, no_samples, gain):
+    """
+    Return a phi cut given a theta data set number
+    :param trace_no: cut number in dataset
+    :param no_samples: vector describing datasets
+    :return: phi cut vector
+    """
+    phi_cut = []
+    theta_points = no_samples[1]
+    for i in np.arange(trace_no*theta_points, (trace_no+1)*theta_points):
+        phi_cut.append(gain[i])
+    phi_cut = np.array(phi_cut)
+
+    return phi_cut

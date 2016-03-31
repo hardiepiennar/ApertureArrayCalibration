@@ -57,6 +57,11 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(len(grid_y), len(grid_y_test))
         self.assertEqual(np.sum(grid_y-grid_y_test), 0)
 
+    def test_calculate_total_gain(self):
+        gain_theta = 7.46389928E+00
+        gain_phi = -1.36970651E+01
+        gain = nf2ff.calculate_total_gain(gain_theta, gain_phi)
+        self.assertAlmostEqual(gain, 7.49701476E+00)
 
 if __name__ == '__main__':
     unittest.main()

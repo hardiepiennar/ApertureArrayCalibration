@@ -155,5 +155,51 @@ class TestReadFEKONearfieldFile(unittest.TestCase):
         self.assertEquals(np.array([0]).__class__, ey.__class__)
         self.assertEquals(np.array([0]).__class__, ez.__class__)
 
+
+class TestFEKOFileUtilities(unittest.TestCase):
+
+    def testReadFrequencyBlockFromDataset(self):
+        theta = [0, 1, 2, 0, 1, 2, 0, 1, 2,
+                 0, 1, 2, 0, 1, 2, 0, 1, 2,
+                 0, 1, 2, 0, 1, 2, 0, 1, 2]
+        phi = [0, 0, 0, 1, 1, 1, 2, 2, 2,
+               0, 0, 0, 1, 1, 1, 2, 2, 2,
+               0, 0, 0, 1, 1, 1, 2, 2, 2]
+        gain_theta = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+                      9, 10, 11, 12, 13, 14, 15, 16, 17,
+                      18, 19, 20, 21, 22, 23, 24, 25, 26]
+        gain_phi = [8, 7, 6, 5, 4, 3, 2, 1, 0,
+                    17, 16, 15, 14, 13, 12, 11, 10, 9,
+                    26, 25, 24, 23, 22, 21, 20, 19, 18]
+        no_samples = [3, 3, 3]
+        block_no = 0
+        theta_block, phi_block, gain_theta_block, gain_phi_block = rFF.read_frequency_block_from_dataset(block_no,
+                                                                                                         no_samples,
+                                                                                                         theta,
+                                                                                                         phi,
+                                                                                                         gain_theta,
+                                                                                                         gain_phi)
+        self.assertEqual(theta_block, [0, 1, 2, 0, 1, 2, 0, 1, 2])
+        self.assertEqual(phi_block, [0, 0, 0, 1, 1, 1, 2, 2, 2])
+        self.assertEqual(gain_theta_block, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertEqual(gain_phi_block, [8, 7, 6, 5, 4, 3, 2, 1, 0])
+
+    def testExtractPhiCut(self):
+        theta = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
+        phi = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])
+        gain = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
+        no_samples = np.array([1, 3, 3])
+
+        theta_block_no = 0
+        cut = rFF.get_phi_cut(theta_block_no, no_samples, gain)
+        self.assertEqual(cut[0], [0])
+        self.assertEqual(cut[2], [2])
+
+        theta_block_no = 2
+        cut = rFF.get_phi_cut(theta_block_no, no_samples, gain)
+        self.assertEqual(cut[0], 6)
+        self.assertEqual(cut[2], 8)
+
+
 if __name__ == '__main__':
     unittest.main()
