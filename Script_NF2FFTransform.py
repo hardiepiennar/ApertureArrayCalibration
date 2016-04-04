@@ -2,6 +2,7 @@ from FileReading import readFromFile as rff
 import numpy as np
 import matplotlib.pyplot as plt
 from NF2FF.NF2FF import *
+import NF2FF.NFFFandFPlotting as nfff_plot
 
 """
 Read in the farfield of an array dipole antenna
@@ -18,6 +19,16 @@ block_size = theta_points*phi_points
 print("(F:"+str(f_points)+" T:"+str(theta_points)+" P:"+str(phi_points)+")..."),
 print("[DONE]")
 
+print("Reading in nearfield data..."),
+filename = "Horizontal_Dipole_Above_Plane.efe"
+f_nf, x, y, z, ex, ey, ez, no_samples_nf = rff.read_fekonearfield_datafile(filename)
+f_points = no_samples[0]
+ex_points = no_samples[1]
+ey_points = no_samples[2]
+ez_points = no_samples[2]
+block_size_nf = ex_points*ey_points*ez_points
+print("[DONE]")
+
 print("Extracting first frequency point: "),
 block = 0
 print(str(f[block*block_size])+"Hz ..."),
@@ -29,40 +40,48 @@ print("Calculating total gain..."),
 gain = calculate_total_gain(gain_theta, gain_phi)
 print("[DONE]")
 
-print("Extracting phi cut: "),
-trace_no = 3
-print(str(phi[trace_no*theta_points])+" degrees ..."),
-phi_cut = []
-for i in np.arange(trace_no*theta_points, (trace_no+1)*theta_points):
-    phi_cut.append(gain[i])
-phi_cut = np.array(phi_cut)
+print("Calculate total e-field..."),
+e = calculate_total_e_field(ex, ey, ez)
 print("[DONE]")
 
-print("Arrange data into grid..."),
+print("Extracting phi cut: "),
+trace_no = 0
+print(str(phi[trace_no*theta_points])+" degrees ..."),
+phi_cut = rff.get_phi_cut(trace_no, no_samples, gain)
+print("[DONE]")
+
+print("Transforming nearfield data to farfield data... "),
+
+print("[DONE]")
+
+print("Arrange data into grid...")
+print("Farfield")
 resolution = [theta_points, phi_points]
 grid_x, grid_y, theta_gain_grid = transform_data_coord_to_grid([theta, phi], gain_theta, resolution)
 grid_x, grid_y, phi_gain_grid = transform_data_coord_to_grid([theta, phi], gain_phi, resolution)
 grid_x, grid_y, gain_grid = transform_data_coord_to_grid([theta, phi], gain, resolution)
+print("Nearfield")
+resolution = [ex_points, ey_points]
+grid_x_nf, grid_y_nf, ex_grid = transform_data_coord_to_grid([x, y], ex, resolution)
+grid_x_nf, grid_y_nf, ey_grid = transform_data_coord_to_grid([x, y], ey, resolution)
+grid_x_nf, grid_y_nf, ez_grid = transform_data_coord_to_grid([x, y], ez, resolution)
+grid_x_nf, grid_y_nf, e_grid = transform_data_coord_to_grid([x, y], e, resolution)
 print("[DONE]")
 
 print("Displaying data...")
-if(True):
-    plt.figure()
-    plt.title("Gain")
-    plt.xlabel("theta [degrees]")
-    plt.ylabel("Gain [dB]")
-    plt.plot(theta[0:theta_points], phi_cut)
-    plt.xlim(0, 180)
-    plt.ylim(-80, 10)
-    plt.grid(True)
-    plt.show()
-    exit()
+if True:
+    nfff_plot.plot_phi_cut(theta[0:theta_points], phi_cut, "Phi cut")
+if True:
+    nfff_plot.plot_farfield_2d(theta, phi, gain_grid, "Farfield pattern", [-20, 10], only_top_hemisphere=True)
+if True:
+    nfff_plot.plot_nearfield_2d(x, y, np.abs(ex_grid), "Nearfield x pattern", [0.01, 1.24])
+    nfff_plot.plot_nearfield_2d(x, y, np.abs(ey_grid), "Nearfield y pattern", [0.01, 1.24])
+    nfff_plot.plot_nearfield_2d(x, y, np.abs(ez_grid), "Nearfield z pattern", [0.01, 1.24])
+    nfff_plot.plot_nearfield_2d(x, y, np.abs(e_grid), "Nearfield pattern", [0.01, 1.24])
 
-plt.figure()
-plt.title("Gain")
-plt.xlabel("theta [degrees]")
-plt.ylabel("phi [degrees]")
-plt.xlim(0, 180)
-plt.ylim(0, 360)
-plt.imshow(gain_grid, extent=(np.min(theta), np.max(theta), np.min(phi), np.max(phi)))
+
 plt.show()
+exit()
+
+#Add label to color bar
+

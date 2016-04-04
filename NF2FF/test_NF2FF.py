@@ -32,10 +32,10 @@ class NF2FFTestCases(unittest.TestCase):
 
     def test_transform_data_from_coord_to_grid_form(self):
         """Test the transformation of data from coordinate form to grid form using the scipy library"""
-        x = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]
-        y = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]
-        v = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-        coordinates = [x, y]
+        x = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2])
+        v = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+        coordinates = np.array([x, y])
         values = v
         res_x = 4
         res_y = 3
@@ -62,6 +62,13 @@ class NF2FFTestCases(unittest.TestCase):
         gain_phi = -1.36970651E+01
         gain = nf2ff.calculate_total_gain(gain_theta, gain_phi)
         self.assertAlmostEqual(gain, 7.49701476E+00)
+
+    def test_calculate_total_e_field(self):
+        ex = 1 + 1j
+        ey = 3 + 2j
+        ez = 2 + 2j
+        e = nf2ff.calculate_total_e_field(ex, ey, ez)
+        self.assertEqual(e, np.sqrt(ex**2 + ey**2 + ez**2))
 
 if __name__ == '__main__':
     unittest.main()

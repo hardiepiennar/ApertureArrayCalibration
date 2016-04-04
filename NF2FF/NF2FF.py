@@ -57,7 +57,7 @@ def transform_data_coord_to_grid(coordinates, values, resolution):
     grid_y, grid_x = np.mgrid[np.min(coordinates[1]):np.max(coordinates[1]):1j*resolution[1],
                               np.min(coordinates[0]):np.max(coordinates[0]):1j*resolution[0]]
 
-    grid_data = griddata(np.transpose(coordinates), values, (grid_x, grid_y), method='linear')
+    grid_data = griddata(np.transpose(coordinates), values, (grid_x, grid_y), method='nearest')
 
     return grid_x, grid_y, grid_data
 
@@ -71,3 +71,16 @@ def calculate_total_gain(gain_theta, gain_phi):
     """
     gain = 20*np.log10(np.sqrt((10**(gain_theta/20))**2 + (10**(gain_phi/20))**2))
     return gain
+
+
+def calculate_total_e_field(ex, ey, ez):
+    """
+    Calculates the total complex e-field from its ex, ey and ez components
+    :param ex: complex E-field in x direction
+    :param ey: complex E-field in y direction
+    :param ez: complex E-field in z direction
+    :return: total complex e-field
+    """
+
+    e = np.sqrt(ex**2 + ey**2 + ez**2)
+    return e
