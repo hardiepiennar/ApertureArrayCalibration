@@ -28,7 +28,7 @@ def plot_phi_cut(theta, gain, title, ylim=[-80, 10]):
     plt.grid(True)
 
 
-def plot_farfield_2d(theta, phi, gain_grid, title, zlim=[-20, 10], only_top_hemisphere=False):
+def plot_farfield_2d(theta, phi, gain_grid, title, zlim=[-1, -1], only_top_hemisphere=False):
     fig, ax = plt.subplots(nrows=1, ncols=1)
 
     ax.set_title(title)
@@ -40,7 +40,10 @@ def plot_farfield_2d(theta, phi, gain_grid, title, zlim=[-20, 10], only_top_hemi
         ax.set_ylim(0, 180)
     ax.set_xlim(0, 360)
     extents = (np.min(phi), np.max(phi), np.min(theta), np.max(theta))
-    v_limits = (zlim[0], zlim[1])
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(gain_grid), np.max(gain_grid))
+    else:
+        v_limits = (zlim[0], zlim[1])
     v_ticks = np.linspace(v_limits[0], v_limits[1], 11)
     data = np.transpose(gain_grid)
 

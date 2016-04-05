@@ -81,6 +81,25 @@ def calculate_total_e_field(ex, ey, ez):
     :param ez: complex E-field in z direction
     :return: total complex e-field
     """
-
     e = np.sqrt(ex**2 + ey**2 + ez**2)
     return e
+
+
+def calc_nf2ff(x, y, z, nearfield):
+    """
+    Calculates the farfield given the nearfield data
+    :param x: vector describing the x dimension in m
+    :param y: vector describing the y dimension in m
+    :param z: distance from antenna to nearfield plane
+    :param nearfield: complex nearfield values in V/m
+    :return theta, phi, farfield: complex farfield in V/m with angles in deg
+    """
+    farfield = np.abs(np.fft.fftshift(np.fft.fft2(nearfield)))
+    theta = -1*((180/np.pi)*np.arctan2(np.sqrt(x**2 + y**2), z) - 180)
+    phi = (180/np.pi)*np.arctan2(x, y)
+
+    for i in np.arange(len(phi)):
+            if phi[i] < 0:
+                phi[i] += 360
+
+    return theta, phi, farfield

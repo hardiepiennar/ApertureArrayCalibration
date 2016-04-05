@@ -70,6 +70,26 @@ class NF2FFTestCases(unittest.TestCase):
         e = nf2ff.calculate_total_e_field(ex, ey, ez)
         self.assertEqual(e, np.sqrt(ex**2 + ey**2 + ez**2))
 
+    def test_nearfield_to_farfield(self):
+        nearfield = np.array([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+        x = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1])
+        y = np.array([-1, -1, -1, 0, 0, 0, 1, 1, 1])
+        z = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
+
+        farfield_test = 20*np.log10(np.abs(2*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])))
+        theta_test = np.array([125.2643897, 135, 125.2643897, 135, 180, 135, 125.2643897, 135, 125.2643897])
+        phi_test = np.array([225, 180, 135, 270, 0, 90, 315, 0, 45])
+
+        trans_theta, trans_phi, trans_farfield = nf2ff.calc_nf2ff(x, y, z, nearfield)
+        print(trans_farfield)
+        for x in np.arange(len(trans_farfield)):
+            for y in np.arange(len(trans_farfield[0])):
+                self.assertAlmostEqual(trans_farfield[x][y], farfield_test[x][y])
+        for x in np.arange(len(trans_theta)):
+                self.assertAlmostEqual(trans_theta[x], theta_test[x])
+        for x in np.arange(len(trans_phi)):
+                self.assertAlmostEqual(trans_phi[x], phi_test[x])
+
 if __name__ == '__main__':
     unittest.main()
 
