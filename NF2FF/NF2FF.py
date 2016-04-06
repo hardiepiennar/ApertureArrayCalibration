@@ -103,3 +103,61 @@ def calc_nf2ff(x, y, z, nearfield):
                 phi[i] += 360
 
     return theta, phi, farfield
+
+
+def calc_dft2(x, y, z, data, kx, ky):
+    """
+    Calculates the disctrete fourier transform for the given 2D data
+    :param x: constant spaced position vector in m
+    :param y: constant spaced position vector in m
+    :param z: position vector in m
+    :param data: 2D matrix of complex values to transform
+    :param kx: angular spectrum to calculate in deg
+    :param ky: angular spectrum to calculate in deg
+    :return transformed_data: transformed 2D complex matrix
+    """
+
+    # Calculate the dimensions of the kx, ky coordinate space
+    start_coord = kx[0]
+    num_x_coords = 0
+    for i in np.arange(1, len(kx)):
+        if kx[i] == start_coord:
+            num_x_coords = i
+            break
+    kx_size = num_x_coords
+    ky_size = len(ky)/num_x_coords
+
+    # Calculate the dimensions of the x, y coordinate space
+    start_coord = x[0]
+    num_x_coords = 0
+    for i in np.arange(1, len(x)):
+        if x[i] == start_coord:
+            num_x_coords = i
+            break
+    x_size = num_x_coords
+    y_size = len(y)/num_x_coords
+
+    # Calculate spacing in grid
+    delta_x = x[1] - x[0]
+    delta_y = y[x_size] - y[0]
+
+    # Create matrix for transformed data
+    transformed_data = np.zeros((ky_size, kx_size), dtype=complex)
+
+    # Convert kx, ky from deg to rad
+    kx = kx*np.pi/180
+    ky = ky*np.pi/180
+
+    x_sum = 0
+    y_sum = 0
+
+    for i in np.arange(len(kx)):
+        for i_x in np.arange(len(data[0])):
+            for i_y in np.arange(len(data)):
+                y_sum += data[i_y][i_x]*np.exp(1j*(kx[i]*i_x*delta_x + ky[i]*i_y*delta_y))
+            x_sum += y_sum
+            y_sum = 0
+        transformed_data[np.floor(i/kx_size)][i % kx_size] += delta_x*delta_y*x_sum
+        x_sum = 0
+
+    return transformed_data

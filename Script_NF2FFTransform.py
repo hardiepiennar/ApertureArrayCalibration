@@ -86,6 +86,9 @@ if True:
 plt.show()
 exit()
 
+#Write function to calculate farfield from nearfield from ex, ey and ez and return fx, fy.
+#Write function to transform fx,fy into fTheta and fPhi
 #Add label to color bar
 #Add e-field subplots for 3 orientations
 #Do nf2ff transform and compare with real farfield
+

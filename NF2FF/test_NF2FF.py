@@ -71,24 +71,50 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(e, np.sqrt(ex**2 + ey**2 + ez**2))
 
     def test_nearfield_to_farfield(self):
-        nearfield = np.array([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+        nearfield_x = np.array([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+        nearfield_y = np.array([[0, 0, 0], [0, 0.1, 0], [0, 0, 0]])
         x = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1])
         y = np.array([-1, -1, -1, 0, 0, 0, 1, 1, 1])
         z = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
+        theta = np.array([-45, 0, 45, -45, 0, 45, -45, 0, 45])
+        phi = np.array([-45, -45, -45, 0, 0, 0, 45, 45, 45])
 
-        farfield_test = 20*np.log10(np.abs(2*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])))
+        farfield_test_theta = 2*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
+        farfield_test_phi = 2*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         theta_test = np.array([125.2643897, 135, 125.2643897, 135, 180, 135, 125.2643897, 135, 125.2643897])
         phi_test = np.array([225, 180, 135, 270, 0, 90, 315, 0, 45])
 
-        trans_theta, trans_phi, trans_farfield = nf2ff.calc_nf2ff(x, y, z, nearfield)
-        print(trans_farfield)
-        for x in np.arange(len(trans_farfield)):
-            for y in np.arange(len(trans_farfield[0])):
-                self.assertAlmostEqual(trans_farfield[x][y], farfield_test[x][y])
+        trans_theta, trans_phi, trans_farfield_theta, trans_farfield_phi = nf2ff.calc_nf2ff(x, y, z, nearfield_x,
+                                                                                            nearfield_y)
+        for x in np.arange(len(trans_farfield_theta)):
+            for y in np.arange(len(trans_farfield_theta[0])):
+                self.assertAlmostEqual(trans_farfield_theta[x][y], farfield_test_theta[x][y])
+        for x in np.arange(len(trans_farfield_phi)):
+            for y in np.arange(len(trans_farfield_phi[0])):
+                self.assertAlmostEqual(trans_farfield_phi[x][y], farfield_test_phi[x][y])
         for x in np.arange(len(trans_theta)):
                 self.assertAlmostEqual(trans_theta[x], theta_test[x])
         for x in np.arange(len(trans_phi)):
                 self.assertAlmostEqual(trans_phi[x], phi_test[x])
+
+    def test_2d_discrete_fourier_transform(self):
+        data = np.array([[0, 0, 0, 0], [0, 2, 0, 0], [0, 0, 0, 0]])
+        x = np.array([-1, 0, 1, 2, -1, 0, 1, 2, -1, 0, 1, 2])
+        y = np.array([-1, -1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1])
+        z = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+        kx = np.array([-45, 0, 45, -45, 0, 45, -45, 0, 45])
+        ky = np.array([-45, -45, -45, 0, 0, 0, 45, 45, 45])
+
+        trans_data = nf2ff.calc_dft2(x, y, z, data, kx, ky)
+
+        """Test if the transform has been calculated correctly"""
+        test_trans_data = np.array([[2*np.exp(-1j*np.pi/2), 2*np.exp(-1j*np.pi/4), 2],
+                                   [2*np.exp(-1j*np.pi/4), 2, 2*np.exp(1j*np.pi/4)],
+                                   [2, 2*np.exp(1j*np.pi/4), 2*np.exp(1j*np.pi/2)]])
+
+        for x in np.arange(len(test_trans_data)):
+            for y in np.arange(len(test_trans_data[0])):
+                self.assertEqual(trans_data[x][y], test_trans_data[x][y])
 
 if __name__ == '__main__':
     unittest.main()
