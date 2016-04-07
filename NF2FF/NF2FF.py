@@ -88,12 +88,13 @@ def calculate_total_e_field(ex, ey, ez):
 def calc_nf2ff(grid_x, grid_y, grid_z, nearfield_x, nearfield_y):
     """
     Calculates the farfield given the nearfield data
-    :param x: vector describing the x dimension in m
-    :param y: vector describing the y dimension in m
-    :param z: distance from antenna to nearfield plane
-    :param nearfield_x: complex nearfield_x values in V/m
-    :param nearfield_y: complex nearfield_y values in V/m
-    :return theta, phi, farfield: complex farfield in V/m with angles in deg in kx and ky directions
+    :param grid_x: 2D matrix with x coords
+    :param grid_y: 2D matrix with y coords
+    :param grid_z: 2D matrix with z coords
+    :param nearfield_x: 2D matrix of complex nearfield_x values
+    :param nearfield_y: 2D matrix of complex nearfield_y values
+    :param nearfield_z: 2D matrix of complex nearfield_z values
+    :return farfield_x, farfield_y, farfield_z: complex farfield 2D matrices
     """
 
     """Calculate the x and y farfields with the fourier transform"""
@@ -104,6 +105,24 @@ def calc_nf2ff(grid_x, grid_y, grid_z, nearfield_x, nearfield_y):
     farfield_z = (farfield_x*grid_x + farfield_y*grid_y)/grid_z
 
     return farfield_x, farfield_y, farfield_z
+
+
+def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, data_z, theta, phi):
+    """
+    Transform cartesian data to spherical data
+    :param grid_x: 2D matrix of data x coordinates
+    :param grid_y: 2D matrix of data y coordinates
+    :param grid_z: 2D matrix of data z coordinates
+    :param data_x: 2D matrix of complex x cartesian data
+    :param data_y: 2D matrix of complex y cartesian data
+    :param data_z: 2D matrix of complex z cartesian data
+    :return data_theta, data_phi: spherical transformed theta and phi directed 2D matrices
+    """
+
+    """Calculate theta and phi coordinates"""
+    data_theta = []
+    data_phi = []
+    return data_theta, data_phi
 
 
 def calc_dft2(x, y, z, data, kx, ky):

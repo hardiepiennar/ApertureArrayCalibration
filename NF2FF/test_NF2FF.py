@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from scipy import interpolate
 import NF2FF as nf2ff
 
 
@@ -124,6 +125,83 @@ class NF2FFTestCases(unittest.TestCase):
             for x in np.arange(len(trans_farfield_z[0])):
                 self.assertAlmostEqual(trans_farfield_z[y][x], farfield_test_z[y][x])
 
+    def test_farfield_cartesian_to_spherical_conversion(self):
+        x_grid = np.array([[-2, -1, 0, 1, 2],
+                           [-2, -1, 0, 1, 2],
+                           [-2, -1, 0, 1, 2],
+                           [-2, -1, 0, 1, 2],
+                           [-2, -1, 0, 1, 2]])
+        y_grid = np.array([[-2, -2, -2, -2, -2],
+                           [-1, -1, -1, -1, -1],
+                           [0, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 1],
+                           [2, 2, 2, 2, 2]])
+        z_grid = np.array([[1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1]])
+
+        farfield_x = 2*np.array([[1, 1, 1, 1, 1],
+                                 [1, 1, 1, 1, 1],
+                                 [1, 1, 1, 1, 1],
+                                 [1, 1, 1, 1, 1],
+                                 [1, 1, 1, 1, 1]])
+        farfield_y = 0.1*farfield_x/2
+        farfield_z = (farfield_x*x_grid + farfield_y*y_grid)/z_grid
+
+        theta = np.array([[-np.pi/4, 0, np.pi/4],
+                          [-np.pi/4, 0, np.pi/4],
+                          [-np.pi/4, 0, np.pi/4]])
+        phi = np.array([[-np.pi/2, -np.pi/2, -np.pi/2],
+                        [0, 0, 0],
+                        [np.pi/2, np.pi/2, np.pi/2]])
+
+        farfield_theta, farfield_phi = nf2ff.transform_cartesian_to_spherical(x_grid, y_grid, z_grid,
+                                                                              farfield_x, farfield_y, farfield_z,
+                                                                              theta, phi)
+        """Check that farfield theta and phi values are correct"""
+        # Create coordinate vectors and matrices
+        x_coords = x_grid.reshape((1, len(x_grid)*len(x_grid[0])))[0]
+        y_coords = y_grid.reshape((1, len(y_grid)*len(y_grid[0])))[0]
+        theta_coords = theta.reshape((1, len(theta)*len(theta[0])))[0]
+        phi_coords = phi.reshape((1, len(phi)*len(phi[0])))[0]
+
+        # Create interpolated functions for cartesian space
+        f_test_farfield_x = interpolate.interp2d(x_coords, y_coords, farfield_x, kind='linear')
+        f_test_farfield_y = interpolate.interp2d(x_coords, y_coords, farfield_y, kind='linear')
+
+        # Calculate the cartesian coordinates for the given theta and phi angles
+        x_points = np.sin(theta_coords)*np.cos(phi_coords)
+        y_points = np.sin(theta_coords)*np.sin(phi_coords)
+
+        # Calculate the function values at the given theta and phi angles
+        test_farfield_x_spherical = np.zeros(len(x_points))
+        for i in np.arange(len(x_points)):
+            test_farfield_x_spherical[i] = f_test_farfield_x(x_points[i], y_points[i])
+
+        test_farfield_y_spherical = np.zeros(len(x_points))
+        for i in np.arange(len(x_points)):
+            test_farfield_y_spherical[i] = f_test_farfield_y(x_points[i], y_points[i])
+
+        # Calculate the function values in the ETheta and EPhi directions
+        test_farfield_theta = test_farfield_x_spherical*np.cos(phi_coords) \
+            + test_farfield_y_spherical*np.sin(phi_coords)*np.cos(theta_coords)
+        test_farfield_phi = (-1*test_farfield_x_spherical*np.sin(phi_coords)
+                                                     + test_farfield_y_spherical*np.cos(phi_coords))
+        test_farfield_theta = test_farfield_theta.reshape((len(theta), len(theta[0])))
+        test_farfield_phi = test_farfield_phi.reshape((len(theta), len(theta[0])))
+        print(test_farfield_theta)
+        print(test_farfield_phi)
+
+
+        for y in np.arange(len(test_farfield_theta)):
+            for x in np.arange(len(test_farfield_theta[0])):
+                self.assertAlmostEqual(test_farfield_theta[y][x], farfield_theta[y][x])
+
+
+        farfield_theta_test = []
+        farfield_phi_test = []
 
     def end(self):
         pass
