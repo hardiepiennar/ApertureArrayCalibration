@@ -70,33 +70,6 @@ class NF2FFTestCases(unittest.TestCase):
         e = nf2ff.calculate_total_e_field(ex, ey, ez)
         self.assertEqual(e, np.sqrt(ex**2 + ey**2 + ez**2))
 
-    def test_nearfield_to_farfield(self):
-        nearfield_x = np.array([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
-        nearfield_y = np.array([[0, 0, 0], [0, 0.1, 0], [0, 0, 0]])
-        x = np.array([-1, 0, 1, -1, 0, 1, -1, 0, 1])
-        y = np.array([-1, -1, -1, 0, 0, 0, 1, 1, 1])
-        z = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
-        theta = np.array([-45, 0, 45, -45, 0, 45, -45, 0, 45])
-        phi = np.array([-45, -45, -45, 0, 0, 0, 45, 45, 45])
-
-        farfield_test_theta = 2*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-        farfield_test_phi = 2*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-        theta_test = np.array([125.2643897, 135, 125.2643897, 135, 180, 135, 125.2643897, 135, 125.2643897])
-        phi_test = np.array([225, 180, 135, 270, 0, 90, 315, 0, 45])
-
-        trans_theta, trans_phi, trans_farfield_theta, trans_farfield_phi = nf2ff.calc_nf2ff(x, y, z, nearfield_x,
-                                                                                            nearfield_y)
-        for x in np.arange(len(trans_farfield_theta)):
-            for y in np.arange(len(trans_farfield_theta[0])):
-                self.assertAlmostEqual(trans_farfield_theta[x][y], farfield_test_theta[x][y])
-        for x in np.arange(len(trans_farfield_phi)):
-            for y in np.arange(len(trans_farfield_phi[0])):
-                self.assertAlmostEqual(trans_farfield_phi[x][y], farfield_test_phi[x][y])
-        for x in np.arange(len(trans_theta)):
-                self.assertAlmostEqual(trans_theta[x], theta_test[x])
-        for x in np.arange(len(trans_phi)):
-                self.assertAlmostEqual(trans_phi[x], phi_test[x])
-
     def test_2d_discrete_fourier_transform(self):
         data = np.array([[0, 0, 0, 0], [0, 2, 0, 0], [0, 0, 0, 0]])
         x = np.array([-1, 0, 1, 2, -1, 0, 1, 2, -1, 0, 1, 2])
@@ -108,13 +81,68 @@ class NF2FFTestCases(unittest.TestCase):
         trans_data = nf2ff.calc_dft2(x, y, z, data, kx, ky)
 
         """Test if the transform has been calculated correctly"""
-        test_trans_data = np.array([[2*np.exp(-1j*np.pi/2), 2*np.exp(-1j*np.pi/4), 2],
-                                   [2*np.exp(-1j*np.pi/4), 2, 2*np.exp(1j*np.pi/4)],
-                                   [2, 2*np.exp(1j*np.pi/4), 2*np.exp(1j*np.pi/2)]])
+        test_trans_data = 2*np.array([[np.exp(-1j*np.pi/2), np.exp(-1j*np.pi/4), 1],
+                                   [np.exp(-1j*np.pi/4), 1, np.exp(1j*np.pi/4)],
+                                   [1, np.exp(1j*np.pi/4), np.exp(1j*np.pi/2)]])
 
         for x in np.arange(len(test_trans_data)):
             for y in np.arange(len(test_trans_data[0])):
                 self.assertEqual(trans_data[x][y], test_trans_data[x][y])
+
+    def test_nearfield_to_farfield_xyz(self):
+        nearfield_x = np.array([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
+        nearfield_y = np.array([[0, 0, 0], [0, 0.1, 0], [0, 0, 0]])
+        x_grid = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+        y_grid = np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
+        z_grid = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
+
+        farfield_test_x = 2*np.array([[np.exp(-2j*np.pi*-1*1/3 - 2j*np.pi*-1*1/3),
+                                       np.exp(-2j*np.pi*0*1/3 - 2j*np.pi*-1*1/3),
+                                       np.exp(-2j*np.pi*1*1/3 - 2j*np.pi*-1*1/3)],
+                                      [np.exp(-2j*np.pi*-1*1/3 - 2j*np.pi*0*1/3),
+                                       np.exp(-2j*np.pi*0*1/3 - 2j*np.pi*0*1/3),
+                                       np.exp(-2j*np.pi*1*1/3 - 2j*np.pi*0*1/3)],
+                                      [np.exp(-2j*np.pi*-1*1/3 - 2j*np.pi*1*1/3),
+                                       np.exp(-2j*np.pi*0*1/3 - 2j*np.pi*1*1/3),
+                                       np.exp(-2j*np.pi*1*1/3 - 2j*np.pi*1*1/3)]])
+        farfield_test_y = 0.1*farfield_test_x/2
+
+        trans_farfield_x, trans_farfield_y, trans_farfield_z = nf2ff.calc_nf2ff(x_grid, y_grid, z_grid,
+                                                                                nearfield_x, nearfield_y)
+
+        """Test if the transforms were done correctly for the x and y farfields"""
+        for y in np.arange(len(farfield_test_x)):
+            for x in np.arange(len(farfield_test_x[0])):
+                self.assertAlmostEqual(trans_farfield_x[y][x], farfield_test_x[y][x])
+        for y in np.arange(len(trans_farfield_y)):
+            for x in np.arange(len(trans_farfield_y[0])):
+                self.assertAlmostEqual(trans_farfield_y[y][x], farfield_test_y[y][x])
+
+        """Test if the z directed farfields were calculated correctly"""
+        farfield_test_z = (trans_farfield_x*x_grid + trans_farfield_y*y_grid)/z_grid
+        for y in np.arange(len(trans_farfield_z)):
+            for x in np.arange(len(trans_farfield_z[0])):
+                self.assertAlmostEqual(trans_farfield_z[y][x], farfield_test_z[y][x])
+
+
+    def end(self):
+        pass
+    # Get nearfield vector dimensions
+    # Find nearfield delta spacings
+    # Find max and min x and y coords
+    # Convert data to x y grid
+    # Define speed of light
+    # Calculate the length of the scanned area in x and y
+    # Add zero padding to increase resolution of plane wave spectral domain
+    # Show nearfield X, Y, Z magnitudes and phases
+    # Calculate rectangular farfield data using fft2's
+    # Show rectangular nearfield magnitudes and phases
+    # Do a holographic back projection and show the projected plots
+    # Convert rectangular farfield to spherical farfield using interpolation and transformation
+    # Calculate new spherical coordinates
+    # Plot spherical and farfield data
+    # Do probe correction
+
 
 if __name__ == '__main__':
     unittest.main()

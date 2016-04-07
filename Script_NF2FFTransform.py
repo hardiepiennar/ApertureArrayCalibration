@@ -65,22 +65,25 @@ grid_x_nf, grid_y_nf, e_grid = transform_data_coord_to_grid([x, y], e, resolutio
 print("[DONE]")
 
 print("Transforming nearfield data to farfield data... "),
-trans_theta, trans_phi, trans_farfield = calc_nf2ff(x, y, z, ex_grid)
+grid_z_nf = np.ones((len(grid_x_nf), len(grid_x_nf[0])))
+trans_farfield_x, trans_farfield_y, trans_farfield_z = calc_nf2ff(grid_x_nf, grid_y_nf, grid_z_nf, ex_grid, ey_grid)
 print("[DONE]")
 
 print("Displaying data...")
 if False:
     nfff_plot.plot_phi_cut(theta[0:theta_points], phi_cut, "Phi cut")
-if True:
+if False:
     nfff_plot.plot_farfield_2d(theta, phi, gain_grid, "Farfield pattern", [-20, 10], only_top_hemisphere=True)
-    nfff_plot.plot_farfield_2d(trans_theta, trans_phi, 20*np.log10(np.abs(trans_farfield)), "Transformed Farfield pattern",
-                               only_top_hemisphere=True)
-if True:
+    #nfff_plot.plot_farfield_2d(trans_theta, trans_phi, 20*np.log10(np.abs(trans_farfield)), "Transformed Farfield pattern",
+    #                           only_top_hemisphere=True)
+if False:
     #nfff_plot.plot_nearfield_2d(x, y, np.abs(ex_grid), "Nearfield x pattern", [0.01, 1.24])
     #nfff_plot.plot_nearfield_2d(x, y, np.abs(ey_grid), "Nearfield y pattern", [0.01, 1.24])
     #nfff_plot.plot_nearfield_2d(x, y, np.abs(ez_grid), "Nearfield z pattern", [0.01, 1.24])
-    nfff_plot.plot_nearfield_2d(x, y, np.abs(e_grid), "Nearfield pattern", [0.01, 1.24])
-    nfff_plot.plot_nearfield_2d(x, y, (180/np.pi)*np.angle(e_grid), "Nearfield pattern")
+    #nfff_plot.plot_nearfield_2d(x, y, np.abs(e_grid), "Nearfield pattern", [0.01, 1.24])
+    #nfff_plot.plot_nearfield_2d(x, y, (180/np.pi)*np.angle(e_grid), "Nearfield pattern")
+    nfff_plot.plot_nearfield_2d(x, y, np.abs(trans_farfield_x), "Farfield pattern x")
+    nfff_plot.plot_nearfield_2d(x, y, (180/np.pi)*np.angle(trans_farfield_x), "Farfield pattern x")
 
 
 plt.show()

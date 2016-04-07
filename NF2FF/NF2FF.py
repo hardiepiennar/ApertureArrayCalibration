@@ -85,24 +85,25 @@ def calculate_total_e_field(ex, ey, ez):
     return e
 
 
-def calc_nf2ff(x, y, z, nearfield):
+def calc_nf2ff(grid_x, grid_y, grid_z, nearfield_x, nearfield_y):
     """
     Calculates the farfield given the nearfield data
     :param x: vector describing the x dimension in m
     :param y: vector describing the y dimension in m
     :param z: distance from antenna to nearfield plane
-    :param nearfield: complex nearfield values in V/m
-    :return theta, phi, farfield: complex farfield in V/m with angles in deg
+    :param nearfield_x: complex nearfield_x values in V/m
+    :param nearfield_y: complex nearfield_y values in V/m
+    :return theta, phi, farfield: complex farfield in V/m with angles in deg in kx and ky directions
     """
-    farfield = np.abs(np.fft.fftshift(np.fft.fft2(nearfield)))
-    theta = -1*((180/np.pi)*np.arctan2(np.sqrt(x**2 + y**2), z) - 180)
-    phi = (180/np.pi)*np.arctan2(x, y)
 
-    for i in np.arange(len(phi)):
-            if phi[i] < 0:
-                phi[i] += 360
+    """Calculate the x and y farfields with the fourier transform"""
+    farfield_x = np.fft.fftshift(np.fft.fft2(nearfield_x))
+    farfield_y = np.fft.fftshift(np.fft.fft2(nearfield_y))
 
-    return theta, phi, farfield
+    """Calculate the z component of the farfield to make a fields transverse to propogation direction"""
+    farfield_z = (farfield_x*grid_x + farfield_y*grid_y)/grid_z
+
+    return farfield_x, farfield_y, farfield_z
 
 
 def calc_dft2(x, y, z, data, kx, ky):
