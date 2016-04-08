@@ -7,6 +7,7 @@ Hardie Pienaar
 """
 
 import numpy as np
+from scipy import interpolate
 from scipy.interpolate import griddata
 
 
@@ -120,9 +121,42 @@ def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, dat
     """
 
     """Calculate theta and phi coordinates"""
-    data_theta = []
-    data_phi = []
-    return data_theta, data_phi
+    # Create coordinate vectors and matrices
+    x_coords = grid_x.reshape((1, len(grid_x)*len(grid_x[0])))[0]
+    y_coords = grid_y.reshape((1, len(grid_y)*len(grid_y[0])))[0]
+    theta_coords = theta.reshape((1, len(theta)*len(theta[0])))[0]
+    phi_coords = phi.reshape((1, len(phi)*len(phi[0])))[0]
+
+    # Create interpolated functions for cartesian space
+    f_farfield_x = interpolate.interp2d(x_coords, y_coords, np.abs(data_x), kind='quintic')
+    f_farfield_y = interpolate.interp2d(x_coords, y_coords, np.abs(data_y), kind='quintic')
+    f_farfield_z = interpolate.interp2d(x_coords, y_coords, np.abs(data_z), kind='quintic')
+
+    # Calculate the cartesian coordinates for the given theta and phi angles
+    x_points = np.sin(theta_coords)*np.cos(phi_coords)
+    y_points = np.sin(theta_coords)*np.sin(phi_coords)
+
+    # Calculate the function values at the given theta and phi angles
+    farfield_x_spherical = np.zeros(len(x_points))
+    for i in np.arange(len(x_points)):
+        farfield_x_spherical[i] = f_farfield_x(x_points[i], y_points[i])
+
+    farfield_y_spherical = np.zeros(len(x_points))
+    for i in np.arange(len(x_points)):
+        farfield_y_spherical[i] = f_farfield_y(x_points[i], y_points[i])
+
+    farfield_z_spherical = np.zeros(len(x_points))
+    for i in np.arange(len(x_points)):
+        farfield_z_spherical[i] = f_farfield_z(x_points[i], y_points[i])
+
+    # Calculate the function values in the ETheta and EPhi directions
+    farfield_theta = farfield_x_spherical*np.cos(theta_coords)*np.cos(phi_coords) + farfield_y_spherical*np.cos(theta_coords)*np.sin(phi_coords)
+    farfield_phi = farfield_x_spherical*(-1*np.sin(phi_coords)) + farfield_y_spherical*np.cos(phi_coords)
+
+    farfield_theta = farfield_theta.reshape((len(theta), len(theta[0])))
+    farfield_phi = farfield_phi.reshape((len(theta), len(theta[0])))
+
+    return farfield_theta, farfield_phi
 
 
 def calc_dft2(x, y, z, data, kx, ky):

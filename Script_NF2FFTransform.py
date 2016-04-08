@@ -67,15 +67,23 @@ print("[DONE]")
 print("Transforming nearfield data to farfield data... "),
 grid_z_nf = np.ones((len(grid_x_nf), len(grid_x_nf[0])))
 trans_farfield_x, trans_farfield_y, trans_farfield_z = calc_nf2ff(grid_x_nf, grid_y_nf, grid_z_nf, ex_grid, ey_grid)
+theta_grid, phi_grid = np.mgrid[np.min(theta):np.max(theta):1j*len(theta),
+                       np.min(phi):np.max(phi):1j*len(phi)]
+print("calculating spherical data"),
+trans_farfield_theta, trans_farfield_phi = transform_cartesian_to_spherical(grid_x_nf, grid_y_nf, grid_z_nf,
+                                                                            trans_farfield_x,
+                                                                            trans_farfield_y,
+                                                                            trans_farfield_z,
+                                                                            np.deg2rad(theta_grid), np.deg2rad(phi_grid))
 print("[DONE]")
 
 print("Displaying data...")
 if False:
     nfff_plot.plot_phi_cut(theta[0:theta_points], phi_cut, "Phi cut")
-if False:
+if True:
     nfff_plot.plot_farfield_2d(theta, phi, gain_grid, "Farfield pattern", [-20, 10], only_top_hemisphere=True)
-    #nfff_plot.plot_farfield_2d(trans_theta, trans_phi, 20*np.log10(np.abs(trans_farfield)), "Transformed Farfield pattern",
-    #                           only_top_hemisphere=True)
+    nfff_plot.plot_farfield_2d(theta, phi, trans_farfield_theta, "Transformed Farfield pattern",
+                               only_top_hemisphere=True)
 if False:
     #nfff_plot.plot_nearfield_2d(x, y, np.abs(ex_grid), "Nearfield x pattern", [0.01, 1.24])
     #nfff_plot.plot_nearfield_2d(x, y, np.abs(ey_grid), "Nearfield y pattern", [0.01, 1.24])
