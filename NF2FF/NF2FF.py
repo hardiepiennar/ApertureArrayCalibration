@@ -59,7 +59,6 @@ def transform_data_coord_to_grid(coordinates, values, resolution):
                               np.min(coordinates[0]):np.max(coordinates[0]):1j*resolution[0]]
 
     grid_data = griddata(np.transpose(coordinates), values, (grid_x, grid_y), method='nearest')
-
     return grid_x, grid_y, grid_data
 
 
@@ -86,7 +85,7 @@ def calculate_total_e_field(ex, ey, ez):
     return e
 
 
-def calc_nf2ff(grid_x, grid_y, grid_z, nearfield_x, nearfield_y):
+def calc_nf2ff(nearfield_x, nearfield_y):
     """
     Calculates the farfield given the nearfield data
     :param grid_x: 2D matrix with x coords
@@ -99,16 +98,28 @@ def calc_nf2ff(grid_x, grid_y, grid_z, nearfield_x, nearfield_y):
     """
 
     """Calculate the x and y farfields with the fourier transform"""
-    farfield_x = np.fft.fftshift(np.fft.fft2(nearfield_x))
-    farfield_y = np.fft.fftshift(np.fft.fft2(nearfield_y))
+    farfield_x = np.fft.fftshift(np.fft.ifft2(nearfield_x))
+    farfield_y = np.fft.fftshift(np.fft.ifft2(nearfield_y))
 
-    """Calculate the z component of the farfield to make a fields transverse to propogation direction"""
-    farfield_z = (farfield_x*grid_x + farfield_y*grid_y)/grid_z
+    return farfield_x, farfield_y
 
-    return farfield_x, farfield_y, farfield_z
+def calc_kgrid(x_grid, y_grid, padding):
+    ksize = len(x_grid) + padding
+    kx = np.arange(ksize) - (float(ksize-1)/2)
+    ky = np.arange(ksize) - (float(ksize-1)/2)
+    kx_grid, ky_grid = np.meshgrid(kx, ky)
+
+    dx = np.abs(x_grid[0][1] - x_grid[0][0])
+    N = len(x_grid) + padding
+    scaling = 2*np.pi*(float(1)/N)*(float(1)/dx)
+    kx_grid *= scaling
+    ky_grid *= scaling
+
+    return kx_grid, ky_grid
 
 
-def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, data_z, theta, phi):
+
+def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, data_z):
     """
     Transform cartesian data to spherical data
     :param grid_x: 2D matrix of data x coordinates
@@ -120,98 +131,53 @@ def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, dat
     :return data_theta, data_phi: spherical transformed theta and phi directed 2D matrices
     """
 
-    """Calculate theta and phi coordinates"""
-    # Create coordinate vectors and matrices
-    x_coords = grid_x.reshape((1, len(grid_x)*len(grid_x[0])))[0]
-    y_coords = grid_y.reshape((1, len(grid_y)*len(grid_y[0])))[0]
-    theta_coords = theta.reshape((1, len(theta)*len(theta[0])))[0]
-    phi_coords = phi.reshape((1, len(phi)*len(phi[0])))[0]
+    print(np.shape(grid_x))
+    print(np.shape(grid_y))
+    print(np.shape(grid_z))
+    print(np.shape(data_x))
+    print(np.shape(data_y))
+    print(np.shape(data_z))
+    r = np.sqrt(grid_x**2 + grid_y**2 + grid_z**2)
+    theta = np.arccos(grid_z/r)
+    phi = np.arctan2(grid_y, grid_x)
 
-    # Create interpolated functions for cartesian space
-    f_farfield_x = interpolate.interp2d(x_coords, y_coords, np.abs(data_x), kind='quintic')
-    f_farfield_y = interpolate.interp2d(x_coords, y_coords, np.abs(data_y), kind='quintic')
-    f_farfield_z = interpolate.interp2d(x_coords, y_coords, np.abs(data_z), kind='quintic')
+    """Calculate the function values in the ETheta and EPhi directions"""
+    farfield_theta = data_x*np.cos(theta)*np.cos(phi) + data_y*np.cos(theta)*np.sin(phi)
+    #farfield_theta = spherical_x*np.cos(phi_coords) + spherical_y*np.sin(phi_coords)
+    farfield_phi = data_x*(-1*np.sin(phi)) + data_y*np.cos(phi)
+    #farfield_phi = np.cos(theta_coords)*(-spherical_x*(np.sin(phi_coords)) + spherical_y*np.cos(phi_coords))
 
-    # Calculate the cartesian coordinates for the given theta and phi angles
-    x_points = np.sin(theta_coords)*np.cos(phi_coords)
-    y_points = np.sin(theta_coords)*np.sin(phi_coords)
-
-    # Calculate the function values at the given theta and phi angles
-    farfield_x_spherical = np.zeros(len(x_points))
-    for i in np.arange(len(x_points)):
-        farfield_x_spherical[i] = f_farfield_x(x_points[i], y_points[i])
-
-    farfield_y_spherical = np.zeros(len(x_points))
-    for i in np.arange(len(x_points)):
-        farfield_y_spherical[i] = f_farfield_y(x_points[i], y_points[i])
-
-    farfield_z_spherical = np.zeros(len(x_points))
-    for i in np.arange(len(x_points)):
-        farfield_z_spherical[i] = f_farfield_z(x_points[i], y_points[i])
-
-    # Calculate the function values in the ETheta and EPhi directions
-    farfield_theta = farfield_x_spherical*np.cos(theta_coords)*np.cos(phi_coords) + farfield_y_spherical*np.cos(theta_coords)*np.sin(phi_coords)
-    farfield_phi = farfield_x_spherical*(-1*np.sin(phi_coords)) + farfield_y_spherical*np.cos(phi_coords)
-
-    farfield_theta = farfield_theta.reshape((len(theta), len(theta[0])))
-    farfield_phi = farfield_phi.reshape((len(theta), len(theta[0])))
-
-    return farfield_theta, farfield_phi
+    return theta, phi, farfield_theta, farfield_phi
 
 
-def calc_dft2(x, y, z, data, kx, ky):
+def calc_dft2(x, y, z, data):
     """
     Calculates the disctrete fourier transform for the given 2D data
     :param x: constant spaced position vector in m
     :param y: constant spaced position vector in m
     :param z: position vector in m
     :param data: 2D matrix of complex values to transform
-    :param kx: angular spectrum to calculate in deg
-    :param ky: angular spectrum to calculate in deg
     :return transformed_data: transformed 2D complex matrix
     """
 
-    # Calculate the dimensions of the kx, ky coordinate space
-    start_coord = kx[0]
-    num_x_coords = 0
-    for i in np.arange(1, len(kx)):
-        if kx[i] == start_coord:
-            num_x_coords = i
-            break
-    kx_size = num_x_coords
-    ky_size = len(ky)/num_x_coords
-
     # Calculate the dimensions of the x, y coordinate space
-    start_coord = x[0]
-    num_x_coords = 0
-    for i in np.arange(1, len(x)):
-        if x[i] == start_coord:
-            num_x_coords = i
-            break
-    x_size = num_x_coords
-    y_size = len(y)/num_x_coords
+    x_size = float(len(x[0]))
+    y_size = float(len(x))
 
     # Calculate spacing in grid
-    delta_x = x[1] - x[0]
-    delta_y = y[x_size] - y[0]
+    delta_x = float(x[0][1] - x[0][0])
+    delta_y = delta_x
 
     # Create matrix for transformed data
-    transformed_data = np.zeros((ky_size, kx_size), dtype=complex)
-
-    # Convert kx, ky from deg to rad
-    kx = kx*np.pi/180
-    ky = ky*np.pi/180
+    transformed_data = np.zeros((y_size, x_size), dtype=complex)
 
     x_sum = 0
     y_sum = 0
 
-    for i in np.arange(len(kx)):
-        for i_x in np.arange(len(data[0])):
-            for i_y in np.arange(len(data)):
-                y_sum += data[i_y][i_x]*np.exp(1j*(kx[i]*i_x*delta_x + ky[i]*i_y*delta_y))
-            x_sum += y_sum
+    for ky in np.arange(len(data)):
+        for kx in np.arange(len(data[0])):
+            transformed_data[ky][kx] = np.sum(delta_x*delta_y*data*np.exp(-2j*np.pi*((kx-(x_size-1)/2)*delta_x/x_size +
+                                                                               (ky-(y_size-1)/2)*delta_y/y_size)))
             y_sum = 0
-        transformed_data[np.floor(i/kx_size)][i % kx_size] += delta_x*delta_y*x_sum
-        x_sum = 0
 
     return transformed_data

@@ -35,17 +35,17 @@ def plot_farfield_2d(theta, phi, gain_grid, title, zlim=[-1, -1], only_top_hemis
     ax.set_xlabel("Phi [degrees]")
     ax.set_ylabel("Theta [degrees]")
     if only_top_hemisphere:
-        ax.set_ylim(90, 180)
+        ax.set_ylim(0, 90)
     else:
-        ax.set_ylim(0, 180)
-    ax.set_xlim(0, 360)
+        ax.set_ylim(-90, 90)
+    ax.set_xlim(-180, 180)
     extents = (np.min(phi), np.max(phi), np.min(theta), np.max(theta))
     if zlim[0] == -1 and zlim[1] == -1:
         v_limits = (np.min(gain_grid), np.max(gain_grid))
     else:
         v_limits = (zlim[0], zlim[1])
     v_ticks = np.linspace(v_limits[0], v_limits[1], 11)
-    data = np.transpose(gain_grid)
+    data = gain_grid
 
     cax = ax.imshow(data, extent=extents, vmin=v_limits)
     ax.contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
@@ -69,13 +69,95 @@ def plot_nearfield_2d(x, y, e, title, zlim=[-1, -1]):
     else:
         v_limits = (zlim[0], zlim[1])
     v_ticks = np.linspace(v_limits[0], v_limits[1], 11)
-    data = np.abs(np.transpose(e))
+    data = np.abs(e)
 
     cax = ax.imshow(data, extent=extents, vmin=v_limits)
     ax.contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
     fig.colorbar(cax, ticks=v_ticks, orientation='horizontal')
 
     ax.set_aspect("auto")
+    fig.set_tight_layout(True)
+
+
+def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1], ylim=[-1, -1]):
+    s = 1.1
+    fig, ax = plt.subplots(3, 2, sharex=True, figsize=(6*s, 8*s))
+
+    data = np.abs(ex)
+    ax[0][0].set_title("Mag: "+title)
+    ax[0][0].set_ylim(ylim)
+    ax[0][0].set_xlim(xlim)
+    extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(data), np.max(data))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[0][0].imshow(data, extent=extents, vmin=v_limits)
+    ax[0][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.abs(ey)
+    ax[1][0].set_ylabel("y [m]")
+    ax[1][0].set_ylim(ylim)
+    ax[1][0].set_xlim(xlim)
+    extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(data), np.max(data))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[1][0].imshow(data, extent=extents, vmin=v_limits)
+    ax[1][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.abs(ez)
+    ax[2][0].set_xlabel("x [m]")
+    ax[2][0].set_ylim(ylim)
+    ax[2][0].set_xlim(xlim)
+    extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(data), np.max(data))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[2][0].imshow(data, extent=extents, vmin=v_limits)
+    ax[2][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.angle(ex)
+    ax[0][1].set_title("Ang: "+title)
+    ax[0][1].set_ylim(ylim)
+    ax[0][1].set_xlim(xlim)
+    extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    v_limits = (-np.pi/2, np.pi/2)
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[0][1].imshow(data, extent=extents, vmin=v_limits)
+    #ax[0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.angle(ey)
+    ax[1][1].set_ylabel("y [m]")
+    ax[1][1].set_ylim(ylim)
+    ax[1][1].set_xlim(xlim)
+    extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    v_limits = (-np.pi/2, np.pi/2)
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[1][1].imshow(data, extent=extents, vmin=v_limits)
+    #ax[1].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.angle(ez)
+    ax[2][1].set_xlabel("x [m]")
+    ax[2][1].set_ylim(ylim)
+    ax[2][1].set_xlim(xlim)
+    extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    v_limits = (-np.pi/2, np.pi/2)
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[2][1].imshow(data, extent=extents, vmin=v_limits)
+    #ax[2].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
     fig.set_tight_layout(True)
 
 
