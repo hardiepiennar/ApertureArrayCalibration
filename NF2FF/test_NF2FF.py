@@ -185,23 +185,26 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertAlmostEqual(farfield_theta[2][1], -2*np.cos(np.pi/4))
         self.assertAlmostEqual(farfield_phi[2][1], -0.1)
 
+    def test_get_fundamental_constants(self):
+        c0, e0, u0 = nf2ff.get_fundamental_constants()
+        self.assertEqual(c0, 299792458)
+        self.assertEqual(e0, 8.8541878176e-12)
+        self.assertEqual(u0, 4*np.pi*1e-7)
+
+
+    def test_calc_freespace_wavelength(self):
+        frequency = 1e9
+        wavelength = nf2ff.calc_freespace_wavelength(frequency)
+        self.assertEqual(wavelength, 299792458/frequency)
+
+
+    def test_calc_freespace_wavenumber(self):
+        frequency = 1e9
+        wavenumber = nf2ff.calc_freespace_wavenumber(frequency)
+        self.assertEqual(wavenumber, 2*np.pi/(299792458/frequency))
+
     def end(self):
         pass
-    # Get nearfield vector dimensions
-    # Find nearfield delta spacings
-    # Find max and min x and y coords
-    # Convert data to x y grid
-    # Define speed of light
-    # Calculate the length of the scanned area in x and y
-    # Add zero padding to increase resolution of plane wave spectral domain
-    # Show nearfield X, Y, Z magnitudes and phases
-    # Calculate rectangular farfield data using fft2's
-    # Show rectangular nearfield magnitudes and phases
-    # Do a holographic back projection and show the projected plots
-    # Convert rectangular farfield to spherical farfield using interpolation and transformation
-    # Calculate new spherical coordinates
-    # Plot spherical and farfield data
-    # Do probe correction
 
 
 if __name__ == '__main__':

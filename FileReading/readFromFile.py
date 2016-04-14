@@ -187,11 +187,11 @@ def read_fekonearfield_datafile(filename):
             frequency = float(string.split()[1])
             no_f_samples += 1
         if line_no == no_ex_line:
-            no_ex_samples = float(string.split()[4])
+            no_ex_samples = int(string.split()[4])
         if line_no == no_ey_line:
-            no_ey_samples = float(string.split()[4])
+            no_ey_samples = int(string.split()[4])
         if line_no == no_ez_line:
-            no_ez_samples = float(string.split()[4])
+            no_ez_samples = int(string.split()[4])
 
         # Read body into arrays
         if found_body_start and len(string) > 0:
@@ -235,9 +235,9 @@ def parse_angle_range_line(line):
     return float(elements[1]), float(elements[2]), float(elements[3])
 
 
-def read_frequency_block_from_dataset(block, no_samples, theta, phi, gain_theta, gain_phi):
+def read_frequency_block_from_spherical_dataset(block, no_samples, theta, phi, gain_theta, gain_phi):
     """
-    Extract a single frequency block from the dataset
+    Extract a single frequency block from the dataset farfield data
     :param block: block no to extract
     :param no_samples: vector with array sizes
     :param theta: theta dataset
@@ -254,6 +254,42 @@ def read_frequency_block_from_dataset(block, no_samples, theta, phi, gain_theta,
 
     return theta, phi, gain_theta, gain_phi
 
+
+def read_frequency_block_from_nearfield_dataset(block, no_samples, x, y, z, data_x, data_y, data_z):
+    """
+    Extract a single frequency block from the dataset nearfield data
+    :param block: block no to extract
+    :param no_samples: vector with array sizes
+    :param x: x dataset
+    :param y: y dataset
+    :param z: z dataset
+    :param data_x: data_x dataset
+    :param data_y: data_y dataset
+    :param data_z: data_z dataset
+    :return: datasets cut to selected frequency blocks
+    """
+    block_size = no_samples[1]*no_samples[2]
+    x = x[block_size*block:block_size*(block+1)]
+    y = y[block_size*block:block_size*(block+1)]
+    z = z[block_size*block:block_size*(block+1)]
+    data_x = data_x[block_size*block:block_size*(block+1)]
+    data_y = data_y[block_size*block:block_size*(block+1)]
+    data_z = data_z[block_size*block:block_size*(block+1)]
+
+    return x, y, z, data_x, data_y, data_z
+
+
+def transform_data_coord_to_grid(x_length, y_length, coord_data):
+    """
+    Transforms the given coordinated values to a grid format
+    :param cood_data: coordinate vector
+    :param x_length: x length of grid
+    :param y_length: y length of grid
+    :return grid_data
+    """
+
+    grid = np.reshape(coord_data, (y_length, x_length))
+    return grid
 
 def get_phi_cut(trace_no, no_samples, gain):
     """

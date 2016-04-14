@@ -118,7 +118,6 @@ def calc_kgrid(x_grid, y_grid, padding):
     return kx_grid, ky_grid
 
 
-
 def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, data_z):
     """
     Transform cartesian data to spherical data
@@ -131,12 +130,6 @@ def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, dat
     :return data_theta, data_phi: spherical transformed theta and phi directed 2D matrices
     """
 
-    print(np.shape(grid_x))
-    print(np.shape(grid_y))
-    print(np.shape(grid_z))
-    print(np.shape(data_x))
-    print(np.shape(data_y))
-    print(np.shape(data_z))
     r = np.sqrt(grid_x**2 + grid_y**2 + grid_z**2)
     theta = np.arccos(grid_z/r)
     phi = np.arctan2(grid_y, grid_x)
@@ -148,6 +141,43 @@ def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, dat
     #farfield_phi = np.cos(theta_coords)*(-spherical_x*(np.sin(phi_coords)) + spherical_y*np.cos(phi_coords))
 
     return theta, phi, farfield_theta, farfield_phi
+
+
+def get_fundamental_constants():
+    """
+    Simple method to return widely used fundamental constants
+    :return c0 m/s, e0 F/m, u0: H/m
+    """
+    c0 = 299792458       # m/s
+    e0 = 8.8541878176e-12  # F/m
+    u0 = np.pi*4e-7      # H/m
+
+    return c0, e0, u0
+
+
+def calc_freespace_wavelength(frequency):
+    """
+    Calculates the freespace wavelength from the frequency
+    :return lambda0 m
+    """
+
+    c0, _, _ = get_fundamental_constants()
+    lambda0 = c0/frequency
+
+    return lambda0
+
+
+def calc_freespace_wavenumber(frequency):
+    """
+    Calculates the freespace wavenumber from the frequency
+    :return wavenumber rad/m
+    """
+
+    c0, _, _ = get_fundamental_constants()
+    lambda0 = calc_freespace_wavelength(frequency)
+    wavenumber = 2*np.pi/lambda0
+
+    return wavenumber
 
 
 def calc_dft2(x, y, z, data):

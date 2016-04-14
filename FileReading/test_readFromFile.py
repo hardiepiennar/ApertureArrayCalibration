@@ -155,6 +155,12 @@ class TestReadFEKONearfieldFile(unittest.TestCase):
         self.assertEquals(np.array([0]).__class__, ey.__class__)
         self.assertEquals(np.array([0]).__class__, ez.__class__)
 
+        i = int(0)
+        self.assertEquals(i.__class__, no_samples[0].__class__)
+        self.assertEquals(i.__class__, no_samples[1].__class__)
+        self.assertEquals(i.__class__, no_samples[2].__class__)
+        self.assertEquals(i.__class__, no_samples[3].__class__)
+
 
 class TestFEKOFileUtilities(unittest.TestCase):
 
@@ -173,16 +179,55 @@ class TestFEKOFileUtilities(unittest.TestCase):
                     26, 25, 24, 23, 22, 21, 20, 19, 18]
         no_samples = [3, 3, 3]
         block_no = 0
-        theta_block, phi_block, gain_theta_block, gain_phi_block = rFF.read_frequency_block_from_dataset(block_no,
-                                                                                                         no_samples,
-                                                                                                         theta,
-                                                                                                         phi,
-                                                                                                         gain_theta,
-                                                                                                         gain_phi)
+        theta_block, phi_block, gain_theta_block, gain_phi_block = rFF.read_frequency_block_from_spherical_dataset(
+            block_no,
+            no_samples,
+            theta,
+            phi,
+            gain_theta,
+            gain_phi)
+
         self.assertEqual(theta_block, [0, 1, 2, 0, 1, 2, 0, 1, 2])
         self.assertEqual(phi_block, [0, 0, 0, 1, 1, 1, 2, 2, 2])
         self.assertEqual(gain_theta_block, [0, 1, 2, 3, 4, 5, 6, 7, 8])
         self.assertEqual(gain_phi_block, [8, 7, 6, 5, 4, 3, 2, 1, 0])
+
+        x = [0, 1, 2, 0, 1, 2, 0, 1, 2,
+             0, 1, 2, 0, 1, 2, 0, 1, 2,
+             0, 1, 2, 0, 1, 2, 0, 1, 2]
+        y = [0, 0, 0, 1, 1, 1, 2, 2, 2,
+             0, 0, 0, 1, 1, 1, 2, 2, 2,
+             0, 0, 0, 1, 1, 1, 2, 2, 2]
+        z = [0, 1, 2, 3, 4, 5, 6, 7, 8,
+             9, 10, 11, 12, 13, 14, 15, 16, 17,
+             18, 19, 20, 21, 22, 23, 24, 25, 26]
+        data_x = [0, 7, 6, 5, 4, 3, 2, 1, 0,
+                  17, 16, 15, 14, 13, 12, 11, 10, 9,
+                  26, 25, 24, 23, 22, 21, 20, 19, 18]
+        data_y = [1, 7, 6, 5, 4, 3, 2, 1, 0,
+                  17, 16, 15, 14, 13, 12, 11, 10, 9,
+                  26, 25, 24, 23, 22, 21, 20, 19, 18]
+        data_z = [2, 7, 6, 5, 4, 3, 2, 1, 0,
+                  17, 16, 15, 14, 13, 12, 11, 10, 9,
+                  26, 25, 24, 23, 22, 21, 20, 19, 18]
+        no_samples = [3, 3, 3, 3]
+        block_no = 0
+        x_block, y_block, z_block, x_data_block, y_data_block, z_data_block =\
+            rFF.read_frequency_block_from_nearfield_dataset(block_no,
+                                                            no_samples,
+                                                            x,
+                                                            y,
+                                                            z,
+                                                            data_x,
+                                                            data_y,
+                                                            data_z)
+
+        self.assertEqual(x_block, [0, 1, 2, 0, 1, 2, 0, 1, 2])
+        self.assertEqual(y_block, [0, 0, 0, 1, 1, 1, 2, 2, 2])
+        self.assertEqual(z_block, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertEqual(x_data_block, [0, 7, 6, 5, 4, 3, 2, 1, 0])
+        self.assertEqual(y_data_block, [1, 7, 6, 5, 4, 3, 2, 1, 0])
+        self.assertEqual(z_data_block, [2, 7, 6, 5, 4, 3, 2, 1, 0])
 
     def testExtractPhiCut(self):
         theta = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
@@ -199,6 +244,20 @@ class TestFEKOFileUtilities(unittest.TestCase):
         cut = rFF.get_phi_cut(theta_block_no, no_samples, gain)
         self.assertEqual(cut[0], 6)
         self.assertEqual(cut[2], 8)
+
+
+    def test_transform_data_from_coord_to_grid_form(self):
+        """Test the transformation of data from coordinate form to grid form"""
+        x = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+        x_length = 3
+        y_length = 4
+        grid_data = rFF.transform_data_coord_to_grid(x_length, y_length, x)
+
+        grid_data_test = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]])
+        self.assertEqual(grid_data_test.__class__, grid_data.__class__)
+        self.assertEqual(len(grid_data), len(grid_data_test))
+        self.assertEqual(len(grid_data[0]), len(grid_data_test[0]))
+        self.assertEqual(np.sum(grid_data-grid_data_test), 0)
 
 
 if __name__ == '__main__':
