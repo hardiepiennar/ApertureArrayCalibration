@@ -217,16 +217,20 @@ class NF2FFTestCases(unittest.TestCase):
         grid_y = np.array([[0, 0], [1, 1]])
         nearfield_x = np.array([[0, 0], [0, 2]])
         nearfield_y = np.array([[0, 0], [0, 0.1]])
+        nearfield_z = np.array([[0, 0], [0, 0.2]])
 
         pad_factor = 2
-        grid_x, grid_y, nearfield_x, nearfield_y = nf2ff.pad_nearfield_grid(grid_x, grid_y,
-                                                                            nearfield_x, nearfield_y,
-                                                                            pad_factor)
+        grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z = nf2ff.pad_nearfield_grid(grid_x, grid_y,
+                                                                                         nearfield_x,
+                                                                                         nearfield_y,
+                                                                                         nearfield_z,
+                                                                                         pad_factor)
 
         grid_x_test = np.array([[0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
         grid_y_test = np.array([[0, 0, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
         nearfield_x_test = np.array([[0, 0, 0, 0], [0, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
         nearfield_y_test = np.array([[0, 0, 0, 0], [0, 0.1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        nearfield_z_test = np.array([[0, 0, 0, 0], [0, 0.2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
 
         self.assertEqual(len(grid_x), len(grid_x_test))
         self.assertEqual(len(grid_x[0]), len(grid_x_test[0]))
@@ -236,6 +240,8 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(len(nearfield_x_test[0]), len(nearfield_x_test[0]))
         self.assertEqual(len(nearfield_y), len(nearfield_y_test))
         self.assertEqual(len(nearfield_y_test[0]), len(nearfield_y_test[0]))
+        self.assertEqual(len(nearfield_z), len(nearfield_z_test))
+        self.assertEqual(len(nearfield_z_test[0]), len(nearfield_z_test[0]))
 
         for y in np.arange(len(grid_x_test)):
             for x in np.arange(len(grid_x_test[0])):
@@ -250,6 +256,9 @@ class NF2FFTestCases(unittest.TestCase):
         for y in np.arange(len(nearfield_y_test)):
             for x in np.arange(len(nearfield_y_test[0])):
                 self.assertAlmostEqual(nearfield_y[y][x], nearfield_y_test[y][x])
+        for y in np.arange(len(nearfield_z_test)):
+            for x in np.arange(len(nearfield_z_test[0])):
+                self.assertAlmostEqual(nearfield_z[y][x], nearfield_z_test[y][x])
 
     def test_generate_spherical_theta_phi_grid(self):
         theta_steps = 3

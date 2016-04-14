@@ -116,14 +116,14 @@ def generate_kspace(grid_x, grid_y, wavenumber):
     no_points = len(grid_x)
     delta = np.abs(grid_x[0][1] - grid_x[0][0])
 
-    kx = np.arange(no_points) - (float(no_points-1)/2)
-    ky = np.arange(no_points) - (float(no_points-1)/2)
+    kx = np.arange(no_points) - float(no_points-1)/2
+    ky = np.arange(no_points) - float(no_points-1)/2
     kx_grid, ky_grid = np.meshgrid(kx, ky)
-
-    scaling = 2*np.pi*(float(1)/no_points)*(float(1)/delta)
+    scaling = 2*np.pi*(float(1)/(delta*no_points))
     kx_grid *= scaling
     ky_grid *= scaling
-    kz_grid = np.sqrt(wavenumber**2 - kx_grid**2 - ky_grid**2)
+
+    kz_grid = np.sqrt(wavenumber**2 - kx_grid**2 - ky_grid**2 + 0j)
 
     return kx_grid, ky_grid, kz_grid
 
@@ -217,7 +217,7 @@ def calc_freespace_wavenumber(frequency):
     return wavenumber
 
 
-def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, pad_factor):
+def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z, pad_factor):
     """
     :param grid_x: x grid points
     :param grid_y: y grid points
@@ -231,8 +231,9 @@ def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, pad_factor):
     grid_y = np.pad(grid_y, (0, padding), 'constant')
     nearfield_x = np.pad(nearfield_x, (0, padding), 'constant')
     nearfield_y = np.pad(nearfield_y, (0, padding), 'constant')
+    nearfield_z = np.pad(nearfield_z, (0, padding), 'constant')
 
-    return grid_x, grid_y, nearfield_x, nearfield_y
+    return grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z
 
 def calc_dft2(x, y, z, data):
     """

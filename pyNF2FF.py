@@ -8,17 +8,21 @@ Dr Hardie Pienaar
 import FileReading.readFromFile as rff
 import NF2FF.NF2FF as nf2ff
 import numpy as np
+import NF2FF.NFFFandFPlotting as plotting
+import matplotlib.pyplot as plt
 
 """General settings"""
-filename = "Horizontal_Dipole_Above_Plane.efe"
+filename = "WaveguideHornMainBeam.efe"
+separation = 0.0899377374000528
 frequency_block = 0  # Select the first frequency block in the file
-pad_factor = 1
+pad_factor = 4
+
 
 # Spherical farfield pattern settings
 theta_lim = (-np.pi/2, np.pi/2)
 phi_lim = (0, np.pi)
-theta_steps = 20
-phi_steps = 20
+theta_steps = 21
+phi_steps = 21
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
@@ -36,7 +40,8 @@ print("Frequencies: "+str(coord_structure[0]))
 print("X-Points:    "+str(x_points))
 print("Y-Points:    "+str(y_points))
 print("Z-Points:    "+str(coord_structure[3]))
-print("Delta:       "+str(delta)+" m\n")
+print("Delta:       "+str(delta)+" m")
+print("Separation:  "+str(round(separation, 3))+" m\n")
 
 print("Extracting block: "+str(frequency_block)+" from imported dataset\n")
 x, y, z, ex, ey, ez = rff.read_frequency_block_from_nearfield_dataset(frequency_block, coord_structure, x, y, z,
@@ -54,13 +59,14 @@ print("Wavenumber: "+str(np.round(wavenumber, 3))+" rad/m\n")
 print("Transforming data into meshgrid")
 x_grid = rff.transform_data_coord_to_grid(x_points, y_points, x)
 y_grid = rff.transform_data_coord_to_grid(x_points, y_points, y)
-z_grid = rff.transform_data_coord_to_grid(x_points, y_points, z)
 ex_grid = rff.transform_data_coord_to_grid(x_points, y_points, ex)
 ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
 ez_grid = rff.transform_data_coord_to_grid(x_points, y_points, ez)
 
 print("Increasing angular spectrum resolution with a zero padding factor of: "+str(pad_factor))
-x_grid, y_grid, ex_grid, ey_grid = nf2ff.pad_nearfield_grid(x_grid, y_grid, ex_grid, ey_grid, pad_factor)
+x_grid, y_grid, ex_grid, ey_grid, ez_grid = nf2ff.pad_nearfield_grid(x_grid, y_grid,
+                                                                     ex_grid, ey_grid, ez_grid,
+                                                                     pad_factor)
 
 print("Generating k-space")
 kx_grid, ky_grid, kz_grid = nf2ff.generate_kspace(x_grid, y_grid, wavenumber)
@@ -71,8 +77,13 @@ theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_
 print("Calculating angular spectrum of nearfield..."),
 fex_grid = nf2ff.calc_angular_spectrum(ex_grid)
 fey_grid = nf2ff.calc_angular_spectrum(ey_grid)
-fez_grid = nf2ff.calc_angular_spectrum(ez_grid)
+fez_grid = -(kx_grid*fex_grid + ky_grid*fey_grid)/kz_grid
 print("[DONE]")
+
+#plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fex_grid), "FEX")
+#plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fey_grid), "FEX")
+#plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fez_grid), "FEX")
+#plt.show()
 
 # TODO Interpolate the angular spectrum data onto the spherical coordinate grid (fe_spherical = transform_cartesian to_spherical(kx_grid,ky_grid,fe_grid,wavenumber,theta,phi))
 
