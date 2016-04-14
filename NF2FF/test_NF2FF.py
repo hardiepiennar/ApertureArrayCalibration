@@ -124,23 +124,34 @@ class NF2FFTestCases(unittest.TestCase):
             for x in np.arange(len(trans_farfield_y[0])):
                 self.assertAlmostEqual(trans_farfield_y[y][x], farfield_test_y[y][x])
 
-
-    def test_kgrid_calculation(self):
+    def test_generate_kspace(self):
         x_grid = 0.1*np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
         y_grid = 0.1*np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
-        padding = 31
-        dx = np.abs(x_grid[0][1] - x_grid[0][0])
-        N = len(x_grid) + padding
+        wavenumber = 30
 
-        kx_grid, ky_grid = nf2ff.calc_kgrid(x_grid, y_grid, padding)
+        kx_grid, ky_grid, kz_grid = nf2ff.generate_kspace(x_grid, y_grid, wavenumber)
 
-        self.assertEqual(len(kx_grid), len(x_grid) + padding)
-        self.assertEqual(len(kx_grid[0]), len(x_grid[0]) + padding)
-        self.assertEqual(len(ky_grid), len(y_grid) + padding)
-        self.assertEqual(len(ky_grid[0]), len(y_grid[0]) + padding)
+        scaling = 2*np.pi/(3*0.1)
+        kx_grid_test = scaling*np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+        ky_grid_test = scaling*np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
+        kz_grid_test = np.sqrt(wavenumber**2 - kx_grid_test**2 - ky_grid_test**2)
 
-        self.assertAlmostEqual(kx_grid[0][N-1], 2*np.pi*((N-1)/float(N))*(float(1)/dx)/2)
-        self.assertAlmostEqual(ky_grid[0][N-1], -2*np.pi*((N-1)/float(N))*(float(1)/dx)/2)
+        self.assertEqual(len(kx_grid), len(kx_grid_test))
+        self.assertEqual(len(kx_grid[0]), len(kx_grid_test[0]))
+        self.assertEqual(len(ky_grid), len(ky_grid_test))
+        self.assertEqual(len(ky_grid[0]), len(ky_grid_test[0]))
+        self.assertEqual(len(kz_grid), len(kz_grid_test))
+        self.assertEqual(len(kz_grid[0]), len(kz_grid_test[0]))
+
+        for y in np.arange(len(kx_grid_test)):
+            for x in np.arange(len(kx_grid_test[0])):
+                self.assertAlmostEqual(kx_grid_test[y][x], kx_grid[y][x])
+        for y in np.arange(len(ky_grid_test)):
+            for x in np.arange(len(ky_grid_test[0])):
+                self.assertAlmostEqual(ky_grid_test[y][x], ky_grid[y][x])
+        for y in np.arange(len(kz_grid_test)):
+            for x in np.arange(len(kz_grid_test[0])):
+                self.assertAlmostEqual(kz_grid_test[y][x], kz_grid[y][x])
 
     def test_farfield_cartesian_to_spherical_conversion(self):
         x_grid = np.array([[-2, -1, 0, 1, 2],
@@ -191,17 +202,85 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(e0, 8.8541878176e-12)
         self.assertEqual(u0, 4*np.pi*1e-7)
 
-
     def test_calc_freespace_wavelength(self):
         frequency = 1e9
         wavelength = nf2ff.calc_freespace_wavelength(frequency)
         self.assertEqual(wavelength, 299792458/frequency)
 
-
     def test_calc_freespace_wavenumber(self):
         frequency = 1e9
         wavenumber = nf2ff.calc_freespace_wavenumber(frequency)
         self.assertEqual(wavenumber, 2*np.pi/(299792458/frequency))
+
+    def test_pad_nearfield_grid(self):
+        grid_x = np.array([[0, 1], [0, 1]])
+        grid_y = np.array([[0, 0], [1, 1]])
+        nearfield_x = np.array([[0, 0], [0, 2]])
+        nearfield_y = np.array([[0, 0], [0, 0.1]])
+
+        pad_factor = 2
+        grid_x, grid_y, nearfield_x, nearfield_y = nf2ff.pad_nearfield_grid(grid_x, grid_y,
+                                                                            nearfield_x, nearfield_y,
+                                                                            pad_factor)
+
+        grid_x_test = np.array([[0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        grid_y_test = np.array([[0, 0, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        nearfield_x_test = np.array([[0, 0, 0, 0], [0, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        nearfield_y_test = np.array([[0, 0, 0, 0], [0, 0.1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+
+        self.assertEqual(len(grid_x), len(grid_x_test))
+        self.assertEqual(len(grid_x[0]), len(grid_x_test[0]))
+        self.assertEqual(len(grid_y), len(grid_y_test))
+        self.assertEqual(len(grid_y[0]), len(grid_y_test[0]))
+        self.assertEqual(len(nearfield_x), len(nearfield_x_test))
+        self.assertEqual(len(nearfield_x_test[0]), len(nearfield_x_test[0]))
+        self.assertEqual(len(nearfield_y), len(nearfield_y_test))
+        self.assertEqual(len(nearfield_y_test[0]), len(nearfield_y_test[0]))
+
+        for y in np.arange(len(grid_x_test)):
+            for x in np.arange(len(grid_x_test[0])):
+                self.assertAlmostEqual(grid_x[y][x], grid_x_test[y][x])
+        for y in np.arange(len(grid_y_test)):
+            for x in np.arange(len(grid_y_test[0])):
+                self.assertAlmostEqual(grid_y[y][x], grid_y_test[y][x])
+
+        for y in np.arange(len(nearfield_x_test)):
+            for x in np.arange(len(nearfield_x_test[0])):
+                self.assertAlmostEqual(nearfield_x[y][x], nearfield_x_test[y][x])
+        for y in np.arange(len(nearfield_y_test)):
+            for x in np.arange(len(nearfield_y_test[0])):
+                self.assertAlmostEqual(nearfield_y[y][x], nearfield_y_test[y][x])
+
+    def test_generate_spherical_theta_phi_grid(self):
+        theta_steps = 3
+        phi_steps = 5
+        theta_lim = (-np.pi/2, np.pi/2)
+        phi_lim = (0, 2*np.pi)
+        theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim)
+
+        test_theta_grid = np.array([[-np.pi/2, 0, np.pi/2],
+                                    [-np.pi/2, 0, np.pi/2],
+                                    [-np.pi/2, 0, np.pi/2],
+                                    [-np.pi/2, 0, np.pi/2],
+                                    [-np.pi/2, 0, np.pi/2]])
+
+        test_phi_grid = np.array([[0, 0, 0],
+                                  [np.pi/2, np.pi/2, np.pi/2],
+                                  [np.pi, np.pi, np.pi],
+                                  [3*np.pi/2, 3*np.pi/2, 3*np.pi/2],
+                                  [2*np.pi, 2*np.pi, 2*np.pi]])
+
+        self.assertEqual(len(test_theta_grid), len(theta_grid))
+        self.assertEqual(len(test_theta_grid[0]), len(theta_grid[0]))
+        self.assertEqual(len(test_phi_grid), len(phi_grid))
+        self.assertEqual(len(test_phi_grid[0]), len(phi_grid[0]))
+
+        for y in np.arange(len(test_theta_grid)):
+            for x in np.arange(len(test_theta_grid[0])):
+                self.assertAlmostEqual(test_theta_grid[y][x], theta_grid[y][x])
+        for y in np.arange(len(test_phi_grid)):
+            for x in np.arange(len(test_phi_grid[0])):
+                self.assertAlmostEqual(test_phi_grid[y][x], phi_grid[y][x])
 
     def end(self):
         pass

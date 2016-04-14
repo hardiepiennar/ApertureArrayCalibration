@@ -12,7 +12,13 @@ import numpy as np
 """General settings"""
 filename = "Horizontal_Dipole_Above_Plane.efe"
 frequency_block = 0  # Select the first frequency block in the file
-pad_factor = 4
+pad_factor = 1
+
+# Spherical farfield pattern settings
+theta_lim = (-np.pi/2, np.pi/2)
+phi_lim = (0, np.pi)
+theta_steps = 20
+phi_steps = 20
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
@@ -54,14 +60,14 @@ ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
 ez_grid = rff.transform_data_coord_to_grid(x_points, y_points, ez)
 
 print("Increasing angular spectrum resolution with a zero padding factor of: "+str(pad_factor))
+x_grid, y_grid, ex_grid, ey_grid = nf2ff.pad_nearfield_grid(x_grid, y_grid, ex_grid, ey_grid, pad_factor)
 
-# TODO Zero pad nearfield (x_grid, y_grid, ex_grid, ey_grid = pad_nearfield_data(x_grid, y_grid, ex_grid, ey_grid, padding))
+print("Generating k-space")
+kx_grid, ky_grid, kz_grid = nf2ff.generate_kspace(x_grid, y_grid, wavenumber)
 
-# TODO Generate k-space grids (kx_grid, ky_grid = generate_kspace_grid(x_grid, y_grid, dx, dy))
 
-# TODO Generate theta, phi spherical grid (theta_grid, phi_grid = generate_spherical_grid(dTheta, dPhi))
-
-# TODO Generate z_grid (z_grid = generate_z_grid(wavenumber, x_grid, y_grid))
+print("Generating theta phi spherical grid")
+theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim)
 
 # TODO Calculate angular spectrum of nearfield (fex_grid, fey_grid, fez_grid = (ex_grid, ey_grid))
 

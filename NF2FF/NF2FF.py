@@ -103,20 +103,45 @@ def calc_nf2ff(nearfield_x, nearfield_y):
 
     return farfield_x, farfield_y
 
-def calc_kgrid(x_grid, y_grid, padding):
-    ksize = len(x_grid) + padding
-    kx = np.arange(ksize) - (float(ksize-1)/2)
-    ky = np.arange(ksize) - (float(ksize-1)/2)
+
+def generate_kspace(grid_x, grid_y, wavenumber):
+    """
+    Generates kspace for angular spectrum
+    :param grid_x: x grid points
+    :param grid_y: y grid points
+    :param wavenumber: freespace wavenumber in rad/m
+    :return kx_grid, ky_grid, kz_grid: wavenumber domain grids
+    """
+
+    no_points = len(grid_x)
+    delta = np.abs(grid_x[0][1] - grid_x[0][0])
+
+    kx = np.arange(no_points) - (float(no_points-1)/2)
+    ky = np.arange(no_points) - (float(no_points-1)/2)
     kx_grid, ky_grid = np.meshgrid(kx, ky)
 
-    dx = np.abs(x_grid[0][1] - x_grid[0][0])
-    N = len(x_grid) + padding
-    scaling = 2*np.pi*(float(1)/N)*(float(1)/dx)
+    scaling = 2*np.pi*(float(1)/no_points)*(float(1)/delta)
     kx_grid *= scaling
     ky_grid *= scaling
+    kz_grid = np.sqrt(wavenumber**2 - kx_grid**2 - ky_grid**2)
 
-    return kx_grid, ky_grid
+    return kx_grid, ky_grid, kz_grid
 
+def generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim):
+    """
+    Generates a theta phi grid with the given step sizes and limits
+    :param dtheta: theta step size in rad
+    :param dphi: phi step size in rad
+    :param theta_lim: theta limit tuple in rad
+    :param phi_lim: phi limit tuple in rad
+    :return theta_grid, phi_grid:
+    """
+    theta = np.linspace(theta_lim[0], theta_lim[1], theta_steps)
+    phi = np.linspace(phi_lim[0], phi_lim[1], phi_steps)
+
+    theta_grid, phi_grid = np.meshgrid(theta, phi)
+
+    return theta_grid, phi_grid
 
 def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, data_z):
     """
@@ -179,6 +204,22 @@ def calc_freespace_wavenumber(frequency):
 
     return wavenumber
 
+def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, pad_factor):
+    """
+    :param grid_x: x grid points
+    :param grid_y: y grid points
+    :param nearfield_x: x nearfield grid points
+    :param nearfield_y: y nearfield grid points
+    :param pad_factor: the amount of padding rows and columns to add
+    :return: padded data
+    """
+    padding = np.ceil(len(grid_x)*(pad_factor-1))
+    grid_x = np.pad(grid_x, (0, padding), 'constant')
+    grid_y = np.pad(grid_y, (0, padding), 'constant')
+    nearfield_x = np.pad(nearfield_x, (0, padding), 'constant')
+    nearfield_y = np.pad(nearfield_y, (0, padding), 'constant')
+
+    return grid_x, grid_y, nearfield_x, nearfield_y
 
 def calc_dft2(x, y, z, data):
     """
