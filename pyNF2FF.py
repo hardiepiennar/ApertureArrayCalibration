@@ -65,11 +65,14 @@ x_grid, y_grid, ex_grid, ey_grid = nf2ff.pad_nearfield_grid(x_grid, y_grid, ex_g
 print("Generating k-space")
 kx_grid, ky_grid, kz_grid = nf2ff.generate_kspace(x_grid, y_grid, wavenumber)
 
-
-print("Generating theta phi spherical grid")
+print("Generating theta phi spherical grid\n")
 theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim)
 
-# TODO Calculate angular spectrum of nearfield (fex_grid, fey_grid, fez_grid = (ex_grid, ey_grid))
+print("Calculating angular spectrum of nearfield..."),
+fex_grid = nf2ff.calc_angular_spectrum(ex_grid)
+fey_grid = nf2ff.calc_angular_spectrum(ey_grid)
+fez_grid = nf2ff.calc_angular_spectrum(ez_grid)
+print("[DONE]")
 
 # TODO Interpolate the angular spectrum data onto the spherical coordinate grid (fe_spherical = transform_cartesian to_spherical(kx_grid,ky_grid,fe_grid,wavenumber,theta,phi))
 

@@ -282,6 +282,19 @@ class NF2FFTestCases(unittest.TestCase):
             for x in np.arange(len(test_phi_grid[0])):
                 self.assertAlmostEqual(test_phi_grid[y][x], phi_grid[y][x])
 
+    def test_calculate_angular_spectrum(self):
+        nearfield = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
+
+        farfield = nf2ff.calc_angular_spectrum(nearfield)
+
+        test_farfield = (float(1)/9)*np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
+
+        for y in np.arange(len(test_farfield)):
+            for x in np.arange(len(test_farfield[0])):
+                self.assertAlmostEqual(np.abs(test_farfield[y][x]), np.abs(farfield[y][x]))
+
+        # TODO: test phase
+
     def end(self):
         pass
 

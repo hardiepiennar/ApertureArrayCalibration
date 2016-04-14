@@ -127,6 +127,18 @@ def generate_kspace(grid_x, grid_y, wavenumber):
 
     return kx_grid, ky_grid, kz_grid
 
+
+def calc_angular_spectrum(nearfield):
+    """
+    Calculates the angular spectrum of a 2D nearfield grid
+    :param nearfield:
+    :return farfield: angular spectrum
+    """
+
+    farfield = np.fft.fftshift(np.fft.ifft2(nearfield))
+
+    return farfield
+
 def generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim):
     """
     Generates a theta phi grid with the given step sizes and limits
@@ -203,6 +215,7 @@ def calc_freespace_wavenumber(frequency):
     wavenumber = 2*np.pi/lambda0
 
     return wavenumber
+
 
 def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, pad_factor):
     """
