@@ -80,12 +80,14 @@ fey_grid = nf2ff.calc_angular_spectrum(ey_grid)
 fez_grid = -(kx_grid*fex_grid + ky_grid*fey_grid)/kz_grid
 print("[DONE]")
 
+print("Interpolating angular spectrum data onto spherical grid"),
+fe_spherical = transform_cartesian to_spherical(kx_grid,ky_grid,fe_grid,wavenumber,theta,phi)
+print("[DONE]"),
 #plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fex_grid), "FEX")
 #plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fey_grid), "FEX")
 #plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fez_grid), "FEX")
 #plt.show()
 
-# TODO Interpolate the angular spectrum data onto the spherical coordinate grid (fe_spherical = transform_cartesian to_spherical(kx_grid,ky_grid,fe_grid,wavenumber,theta,phi))
 
 # TODO Define a distance in the definite farfield r = 10000
 

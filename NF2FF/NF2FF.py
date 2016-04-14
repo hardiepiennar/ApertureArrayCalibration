@@ -235,6 +235,18 @@ def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z, pa
 
     return grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z
 
+def interpolate_cartesian_to_spherical(kx_grid, ky_grid, fe_grid, wavenumber, theta, phi):
+    """
+    :param kx_grid: wavenumber x grid
+    :param ky_grid: wavenumber y grid
+    :param fe_grid: angular spectrum grid
+    :param wavenumber: wavenumber
+    :param theta: theta points to calculate in rad
+    :param phi: phi points to calculate in rad
+    :return: angular spectrum in spherical grid
+    """
+    return []
+
 def calc_dft2(x, y, z, data):
     """
     Calculates the disctrete fourier transform for the given 2D data
