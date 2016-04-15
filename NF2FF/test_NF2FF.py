@@ -153,48 +153,29 @@ class NF2FFTestCases(unittest.TestCase):
             for x in np.arange(len(kz_grid_test[0])):
                 self.assertAlmostEqual(kz_grid_test[y][x], kz_grid[y][x])
 
-    def test_farfield_cartesian_to_spherical_conversion(self):
-        x_grid = np.array([[-2, -1, 0, 1, 2],
-                           [-2, -1, 0, 1, 2],
-                           [-2, -1, 0, 1, 2],
-                           [-2, -1, 0, 1, 2],
-                           [-2, -1, 0, 1, 2]])
-        y_grid = np.array([[-2, -2, -2, -2, -2],
-                           [-1, -1, -1, -1, -1],
-                           [0, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 1],
-                           [2, 2, 2, 2, 2]])
-        z_grid = np.array([[1, 1, 1, 1, 1],
-                           [1, 1, 1, 1, 1],
-                           [1, 1, 1, 1, 1],
-                           [1, 1, 1, 1, 1],
-                           [1, 1, 1, 1, 1]])
+    def test_transform_cartesian_to_spherical(self):
+        theta_grid = np.array([[-np.pi/2, 0],
+                               [-np.pi/2, 0]])
+        phi_grid = np.array([[0, 0],
+                             [np.pi, np.pi]])
 
-        farfield_x = 2*np.array([[1, 1, 1, 1, 1],
-                                 [1, 1, 1, 1, 1],
-                                 [1, 1, 1, 1, 1],
-                                 [1, 1, 1, 1, 1],
-                                 [1, 1, 1, 1, 1]])
+        farfield_x = 2*np.array([[1, 1],
+                                 [1, 1]])
         farfield_y = 0.1*farfield_x/2
-        farfield_z = (farfield_x*x_grid + farfield_y*y_grid)/z_grid
+        farfield_y
 
-        theta, phi, farfield_theta, farfield_phi = nf2ff.transform_cartesian_to_spherical(x_grid, y_grid, z_grid,
-                                                                              farfield_x, farfield_y, farfield_z)
-
-        """Check that theta and phi coords are correct"""
-        self.assertAlmostEqual(theta[0][0], np.arctan2(np.sqrt(8), 1))
-        self.assertAlmostEqual(theta[0][-1], np.arctan2(np.sqrt(8), 1))
-        self.assertAlmostEqual(theta[1][2], np.pi/4)
-
-        self.assertAlmostEqual(phi[0][0], -np.pi/4-np.pi/2)
-        self.assertAlmostEqual(phi[0][-1], -np.pi/4)
-        self.assertAlmostEqual(phi[-1][-1], np.pi/4)
+        e_theta, e_phi = nf2ff.transform_cartesian_to_spherical(theta_grid, phi_grid, farfield_x, farfield_y)
 
         """Check that farfield theta and phi values are correct"""
-        self.assertAlmostEqual(farfield_theta[2][2], 2)
-        self.assertAlmostEqual(farfield_phi[2][2], 0.1)
-        self.assertAlmostEqual(farfield_theta[2][1], -2*np.cos(np.pi/4))
-        self.assertAlmostEqual(farfield_phi[2][1], -0.1)
+        self.assertAlmostEqual(e_theta[0][0], 2)
+        self.assertAlmostEqual(e_theta[0][1], 2)
+        self.assertAlmostEqual(e_theta[1][0], -2)
+        self.assertAlmostEqual(e_theta[1][1], -2)
+
+        self.assertAlmostEqual(e_phi[0][0], 0)
+        self.assertAlmostEqual(e_phi[0][1], 0.1)
+        self.assertAlmostEqual(e_phi[1][0], 0)
+        self.assertAlmostEqual(e_phi[1][1], -0.1)
 
     def test_get_fundamental_constants(self):
         c0, e0, u0 = nf2ff.get_fundamental_constants()
@@ -211,6 +192,13 @@ class NF2FFTestCases(unittest.TestCase):
         frequency = 1e9
         wavenumber = nf2ff.calc_freespace_wavenumber(frequency)
         self.assertEqual(wavenumber, 2*np.pi/(299792458/frequency))
+
+    def test_calc_propagation_coef(self):
+        frequency = 1e9
+        distance = 100
+        C = nf2ff.calc_propagation_coef(frequency, distance)
+        k0 = 2*np.pi/(299792458/frequency)
+        self.assertEqual(C, 1j*(k0*np.exp(-1j*k0*distance))/(2*np.pi*distance))
 
     def test_pad_nearfield_grid(self):
         grid_x = np.array([[0, 1], [0, 1]])
@@ -355,7 +343,7 @@ class NF2FFTestCases(unittest.TestCase):
                                      [0.316884874378104 + 0.192356769257137j,
                                       -0.0115539438318393 + 0.148913211027039j,
                                       -7.98042564710115 + 4.81284813513545j,
-                                      -0.173370941001693 + 3.70191446043908j
+                                      -0.173370941001693 + 3.70191446043908j,
                                       -0.166156570604876 + 2.86011902866362j],
                                      [-1.94415044619004 + 15.1691583332975j,
                                       0.134466179122087 - 1.69826826556644j,
@@ -376,6 +364,9 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(len(fe_spherical), len(fe_spherical_test))
         self.assertEqual(len(fe_spherical[0]), len(fe_spherical_test[0]))
 
+        for y in np.arange(0, len(fe_spherical_test)):
+            for x in np.arange(1,len(fe_spherical_test[0])-1):
+                self.assertAlmostEqual(fe_spherical_test[y][x], fe_spherical[y][x])
 
     def end(self):
         pass

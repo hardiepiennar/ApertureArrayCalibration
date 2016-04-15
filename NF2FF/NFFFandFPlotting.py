@@ -5,9 +5,11 @@ Hardie Pienaar
 4 April 2016
 """
 
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 def plot_phi_cut(theta, gain, title, ylim=[-80, 10]):
     """
@@ -64,6 +66,30 @@ def plot_nearfield_2d(x, y, e, title, zlim=[-1, -1]):
     ax.set_ylim(np.min(y), np.max(y))
     ax.set_xlim(np.min(x), np.max(x))
     extents = (np.min(x), np.max(x), np.min(y), np.max(y))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(e), np.max(e))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 11)
+    data = e
+
+    cax = ax.imshow(data, extent=extents, vmin=v_limits)
+    ax.contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+    fig.colorbar(cax, ticks=v_ticks, orientation='horizontal')
+
+    ax.set_aspect("auto")
+    fig.set_tight_layout(True)
+
+
+def plot_farfield_kspace_2d(kx, ky, e, title, zlim=[-1, -1]):
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+
+    ax.set_title(title)
+    ax.set_xlabel("kx [rad/m]")
+    ax.set_ylabel("ky [rad/m]")
+    ax.set_ylim(np.min(ky), np.max(ky))
+    ax.set_xlim(np.min(kx), np.max(kx))
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
     if zlim[0] == -1 and zlim[1] == -1:
         v_limits = (np.min(e), np.max(e))
     else:
@@ -160,4 +186,62 @@ def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1],
 
     fig.set_tight_layout(True)
 
+
+def plot_farfield_3d_cartesian(theta, phi, ampl, title, zlim=[-1,-1]):
+    """
+    Plot the data in a 3D cartesian environment
+    :param theta: theta coordinate grid
+    :param phi: phi coordinate grid
+    :param ampl: amplitudes to plot
+    """
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.set_title(title)
+
+    if zlim[0] == -1 and zlim[1] == -1:
+        ax.set_zlim(np.min(ampl), np.max(ampl))
+    else:
+        ampl[ampl < zlim[0]] = zlim[0]
+        ampl[ampl > zlim[1]] = zlim[1]
+        ax.set_zlim(zlim[0], zlim[1])
+
+    surf = ax.plot_surface(np.rad2deg(theta), np.rad2deg(phi), ampl, rstride=1, cstride=1, cmap=cm.jet,
+                           linewidth=0.5, antialiased=True, shade=False)
+
+    ax.set_xlabel("Theta [deg]")
+    ax.set_ylabel("Phi [deg]")
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+
+
+def plot_farfield_3d_spherical(theta, phi, ampl, title, zlim=[-1,-1]):
+    """
+    Plot the data in a 3D spherical environment
+    :param theta: theta coordinate grid
+    :param phi: phi coordinate grid
+    :param ampl: amplitudes to plot
+    """
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    ax._axis3don = False
+
+    scale = 1.2
+    ax.set_xlim(-0.5*scale, 0.5*scale)
+    ax.set_ylim(-0.5*scale, 0.5*scale)
+    ax.set_zlim(-0.65*scale, -0.15*scale)
+
+    ax.set_title(title)
+
+    ampl -= np.min(ampl)
+    ampl /= np.max(ampl)
+    x = ampl*np.sin(theta)*np.cos(phi)
+    y = ampl*np.sin(theta)*np.sin(phi)
+    z = ampl*np.cos(theta)
+    z -= np.max(z)
+    surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap=cm.jet,
+                           linewidth=0.5, antialiased=True, shade=False)
 

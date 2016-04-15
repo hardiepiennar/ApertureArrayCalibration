@@ -155,29 +155,22 @@ def generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim
 
     return theta_grid, phi_grid
 
-def transform_cartesian_to_spherical(grid_x, grid_y, grid_z, data_x, data_y, data_z):
+
+def transform_cartesian_to_spherical(theta_grid, phi_grid, data_x, data_y):
     """
     Transform cartesian data to spherical data
-    :param grid_x: 2D matrix of data x coordinates
-    :param grid_y: 2D matrix of data y coordinates
-    :param grid_z: 2D matrix of data z coordinates
-    :param data_x: 2D matrix of complex x cartesian data
-    :param data_y: 2D matrix of complex y cartesian data
-    :param data_z: 2D matrix of complex z cartesian data
-    :return data_theta, data_phi: spherical transformed theta and phi directed 2D matrices
+    :param theta: 2D matrix of theta coordinates
+    :param phi: 2D matrix of phi coordinates
+    :param data_x: 2D matrix of complex x cartesian data at theta-phi coordinate
+    :param data_y: 2D matrix of complex y cartesian data at theta-phi coordinate
+    :return e_theta, e_phi: spherical transformed theta and phi directed 2D matrices
     """
 
-    r = np.sqrt(grid_x**2 + grid_y**2 + grid_z**2)
-    theta = np.arccos(grid_z/r)
-    phi = np.arctan2(grid_y, grid_x)
-
     """Calculate the function values in the ETheta and EPhi directions"""
-    farfield_theta = data_x*np.cos(theta)*np.cos(phi) + data_y*np.cos(theta)*np.sin(phi)
-    #farfield_theta = spherical_x*np.cos(phi_coords) + spherical_y*np.sin(phi_coords)
-    farfield_phi = data_x*(-1*np.sin(phi)) + data_y*np.cos(phi)
-    #farfield_phi = np.cos(theta_coords)*(-spherical_x*(np.sin(phi_coords)) + spherical_y*np.cos(phi_coords))
+    e_theta = data_x*np.cos(phi_grid) + data_y*np.sin(phi_grid)
+    e_phi = np.cos(theta_grid)*(-1*data_x*np.sin(phi_grid) + data_y*np.cos(phi_grid))
 
-    return theta, phi, farfield_theta, farfield_phi
+    return e_theta, e_phi
 
 
 def get_fundamental_constants():
@@ -217,6 +210,18 @@ def calc_freespace_wavenumber(frequency):
     return wavenumber
 
 
+def calc_propagation_coef(freq, distance):
+    """
+    :param freq: frequency in Hz
+    :param distance: distance in m
+    :return: propagation coefficient
+    """
+    k0 = calc_freespace_wavenumber(freq)
+    C = 1j*(k0*np.exp(-1j*k0*distance))/(2*np.pi*distance)
+
+    return C
+
+
 def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z, pad_factor):
     """
     :param grid_x: x grid points
@@ -245,7 +250,19 @@ def interpolate_cartesian_to_spherical(kx_grid, ky_grid, fe_grid, wavenumber, th
     :param phi: phi points to calculate in rad
     :return: angular spectrum in spherical grid
     """
-    return []
+    fe_spherical_real_func = interpolate.RectBivariateSpline(kx_grid[0], ky_grid[:, 0], np.real(fe_grid))
+    fe_spherical_imag_func = interpolate.RectBivariateSpline(kx_grid[0], ky_grid[:, 0], np.imag(fe_grid))
+
+    fe_spherical = np.reshape(np.zeros(len(phi)*len(theta), dtype=complex), (len(phi), len(theta)))
+
+    for phi_i in np.arange(len(phi)):
+        for theta_i in np.arange(len(theta)):
+            x_coord = wavenumber*np.sin(theta[theta_i])*np.cos(phi[phi_i])
+            y_coord = wavenumber*np.sin(theta[theta_i])*np.sin(phi[phi_i])
+            fe_spherical[phi_i][theta_i] = complex(fe_spherical_real_func(x_coord, y_coord)[0]) - \
+                1j*complex(fe_spherical_imag_func(x_coord, y_coord)[0])
+
+    return fe_spherical
 
 def calc_dft2(x, y, z, data):
     """

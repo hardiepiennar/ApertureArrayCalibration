@@ -12,17 +12,18 @@ import NF2FF.NFFFandFPlotting as plotting
 import matplotlib.pyplot as plt
 
 """General settings"""
-filename = "WaveguideHornMainBeam.efe"
+filename = "WaveguideHorn80deg.efe"
 separation = 0.0899377374000528
 frequency_block = 0  # Select the first frequency block in the file
 pad_factor = 4
 
 
 # Spherical farfield pattern settings
-theta_lim = (-np.pi/2, np.pi/2)
+scan_angle = np.deg2rad(10)
+theta_lim = (-np.pi/2+scan_angle, np.pi/2-scan_angle)
 phi_lim = (0, np.pi)
-theta_steps = 21
-phi_steps = 21
+theta_steps = 41
+phi_steps = 41
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
@@ -64,37 +65,67 @@ ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
 ez_grid = rff.transform_data_coord_to_grid(x_points, y_points, ez)
 
 print("Increasing angular spectrum resolution with a zero padding factor of: "+str(pad_factor))
-x_grid, y_grid, ex_grid, ey_grid, ez_grid = nf2ff.pad_nearfield_grid(x_grid, y_grid,
-                                                                     ex_grid, ey_grid, ez_grid,
-                                                                     pad_factor)
+x_grid_pad, y_grid_pad, ex_grid_pad, ey_grid_pad, ez_grid_pad = nf2ff.pad_nearfield_grid(x_grid, y_grid,
+                                                                                         ex_grid, ey_grid, ez_grid,
+                                                                                         pad_factor)
 
 print("Generating k-space")
-kx_grid, ky_grid, kz_grid = nf2ff.generate_kspace(x_grid, y_grid, wavenumber)
+kx_grid, ky_grid, kz_grid = nf2ff.generate_kspace(x_grid_pad, y_grid_pad, wavenumber)
 
 print("Generating theta phi spherical grid\n")
 theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim)
 
 print("Calculating angular spectrum of nearfield..."),
-fex_grid = nf2ff.calc_angular_spectrum(ex_grid)
-fey_grid = nf2ff.calc_angular_spectrum(ey_grid)
+fex_grid = nf2ff.calc_angular_spectrum(ex_grid_pad)
+fey_grid = nf2ff.calc_angular_spectrum(ey_grid_pad)
 fez_grid = -(kx_grid*fex_grid + ky_grid*fey_grid)/kz_grid
 print("[DONE]")
 
-print("Interpolating angular spectrum data onto spherical grid"),
-fe_spherical = transform_cartesian to_spherical(kx_grid,ky_grid,fe_grid,wavenumber,theta,phi)
-print("[DONE]"),
-#plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fex_grid), "FEX")
-#plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fey_grid), "FEX")
-#plotting.plot_nearfield_2d(kx_grid, ky_grid, np.abs(fez_grid), "FEX")
-#plt.show()
+print("Interpolating angular spectrum data onto spherical grid..."),
+fex_spherical = nf2ff.interpolate_cartesian_to_spherical(kx_grid, ky_grid, fex_grid, wavenumber,
+                                                         theta_grid[0], phi_grid[:, 0])
+fey_spherical = nf2ff.interpolate_cartesian_to_spherical(kx_grid, ky_grid, fey_grid, wavenumber,
+                                                         theta_grid[0], phi_grid[:, 0])
+fez_spherical = nf2ff.interpolate_cartesian_to_spherical(kx_grid, ky_grid, fez_grid, wavenumber,
+                                                         theta_grid[0], phi_grid[:, 0])
+print("[DONE]")
 
+print("Calculating theta and phi components..."),
+r = 10000
+C = nf2ff.calc_propagation_coef(frequency, r)
+e_theta, e_phi = nf2ff.transform_cartesian_to_spherical(theta_grid, phi_grid, fex_spherical, fey_spherical)
+e_theta = C*e_theta
+e_phi = C*e_phi
+e = nf2ff.calculate_total_e_field(e_theta, e_phi,0)
+print("[DONE]")
 
-# TODO Define a distance in the definite farfield r = 10000
+mag_e = 20*np.log10(np.abs(e))
+norm_mag_e = mag_e - np.max(mag_e)
 
-# TODO Calculate the propagation coeficient (get the right name) C = calc_propagation_coef(wavenumber, distance)
+z_upper = np.max([np.max(20*np.log10(np.abs(ex_grid))),
+                 np.max(20*np.log10(np.abs(ey_grid))),
+                 np.max(20*np.log10(np.abs(ez_grid)))])
+range = 80
+plotting.plot_nearfield_2d(x_grid, y_grid, 20*np.log10(np.abs(ex_grid)), "Nearfield E X", zlim=[z_upper-range, z_upper])
+plotting.plot_nearfield_2d(x_grid, y_grid, 20*np.log10(np.abs(ey_grid)), "Nearfield E Y", zlim=[z_upper-range, z_upper])
+plotting.plot_nearfield_2d(x_grid, y_grid, 20*np.log10(np.abs(ez_grid)), "Nearfield E Z", zlim=[z_upper-range, z_upper])
 
-# TODO Calculate Etheta and Ephi (Etheta, Ephi = calc_spherical_components(fex_spherical, fey_spherical, theta, phi))
+plotting.plot_farfield_kspace_2d(kx_grid, ky_grid, np.abs(fex_grid), "Farfield E X")
+plotting.plot_farfield_kspace_2d(kx_grid, ky_grid, np.abs(fey_grid), "Farfield E Y")
+plotting.plot_farfield_kspace_2d(kx_grid, ky_grid, np.abs(fez_grid), "Farfield E Z")
 
-# TODO Calculate E (E = calc_total_theta_phi_field(Etheta, Ephi))
+plotting.plot_farfield_3d_spherical(theta_grid, phi_grid, mag_e, "Farfield")
+plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_e, "Farfield")
 
-# TODO Probably need to do some calculations here to get scaling right
+plt.show()
+
+# TODO: Check scaling with some principle cuts
+# TODO: Fix 2d_all plotting
+# TODO: Program comparison vectors
+# TODO: Import real farfield
+# TODO: Compare farfields
+# TODO: Decide on comparison methodology
+# TODO: Decide on errors to focus on
+# TODO: Write error injection code
+# TODO: Write parameter sweep code
+# TODO: Run comparisons for all error types
