@@ -106,13 +106,9 @@ z_upper = np.max([np.max(20*np.log10(np.abs(ex_grid))),
                  np.max(20*np.log10(np.abs(ey_grid))),
                  np.max(20*np.log10(np.abs(ez_grid)))])
 range = 80
-plotting.plot_nearfield_2d(x_grid, y_grid, 20*np.log10(np.abs(ex_grid)), "Nearfield E X", zlim=[z_upper-range, z_upper])
-plotting.plot_nearfield_2d(x_grid, y_grid, 20*np.log10(np.abs(ey_grid)), "Nearfield E Y", zlim=[z_upper-range, z_upper])
-plotting.plot_nearfield_2d(x_grid, y_grid, 20*np.log10(np.abs(ez_grid)), "Nearfield E Z", zlim=[z_upper-range, z_upper])
+plotting.plot_nearfield_2d_all(x_grid, y_grid, ex_grid, ey_grid, ez_grid, "Nearfield")
 
-plotting.plot_farfield_kspace_2d(kx_grid, ky_grid, np.abs(fex_grid), "Farfield E X")
-plotting.plot_farfield_kspace_2d(kx_grid, ky_grid, np.abs(fey_grid), "Farfield E Y")
-plotting.plot_farfield_kspace_2d(kx_grid, ky_grid, np.abs(fez_grid), "Farfield E Z")
+plotting.plot_farfield_kspace_2d_all(kx_grid, ky_grid, fex_grid, fey_grid, fez_grid, "Farfield")
 
 plotting.plot_farfield_3d_spherical(theta_grid, phi_grid, mag_e, "Farfield")
 plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_e, "Farfield")
@@ -120,7 +116,6 @@ plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_e, "Farfield")
 plt.show()
 
 # TODO: Check scaling with some principle cuts
-# TODO: Fix 2d_all plotting
 # TODO: Program comparison vectors
 # TODO: Import real farfield
 # TODO: Compare farfields
@@ -129,3 +124,4 @@ plt.show()
 # TODO: Write error injection code
 # TODO: Write parameter sweep code
 # TODO: Run comparisons for all error types
+# TODO: Refactor NFFFandFPlotting

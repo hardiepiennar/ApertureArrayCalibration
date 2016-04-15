@@ -105,11 +105,114 @@ def plot_farfield_kspace_2d(kx, ky, e, title, zlim=[-1, -1]):
     fig.set_tight_layout(True)
 
 
-def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1], ylim=[-1, -1]):
+def plot_farfield_kspace_2d_all(kx, ky, fex, fey, fez, title, zlim=[-1, -1], xlim=[-1, -1], ylim=[-1, -1]):
+
+    if xlim[0] == -1 and xlim[1] == -1:
+        xlim[0] = np.min(kx)
+        xlim[1] = np.max(kx)
+    if ylim[0] == -1 and ylim[1] == -1:
+        ylim[0] = np.min(ky)
+        ylim[1] = np.max(ky)
+    if zlim[0] == -1 and zlim[1] == -1:
+        zlim[1] = np.max([np.max(20*np.log10(np.abs(fex))), np.max(20*np.log10(np.abs(fey))), np.max(20*np.log10(np.abs(fez)))])
+        zlim[0] = zlim[1] - 100
+
     s = 1.1
     fig, ax = plt.subplots(3, 2, sharex=True, figsize=(6*s, 8*s))
 
-    data = np.abs(ex)
+    data = 20*np.log10(np.abs(fex))
+    ax[0][0].set_title("Mag: "+title)
+    ax[0][0].set_ylim(ylim)
+    ax[0][0].set_xlim(xlim)
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(data), np.max(data))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[0][0].imshow(data, extent=extents, vmin=v_limits)
+    ax[0][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = 20*np.log10(np.abs(fey))
+    ax[1][0].set_ylabel("ky [m]")
+    ax[1][0].set_ylim(ylim)
+    ax[1][0].set_xlim(xlim)
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(data), np.max(data))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[1][0].imshow(data, extent=extents, vmin=v_limits)
+    ax[1][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = 20*np.log10(np.abs(fez))
+    ax[2][0].set_xlabel("kx [m]")
+    ax[2][0].set_ylim(ylim)
+    ax[2][0].set_xlim(xlim)
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
+    if zlim[0] == -1 and zlim[1] == -1:
+        v_limits = (np.min(data), np.max(data))
+    else:
+        v_limits = (zlim[0], zlim[1])
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[2][0].imshow(data, extent=extents, vmin=v_limits)
+    ax[2][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.angle(fex)
+    ax[0][1].set_title("Ang: "+title)
+    ax[0][1].set_ylim(ylim)
+    ax[0][1].set_xlim(xlim)
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
+    v_limits = (-np.pi/2, np.pi/2)
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[0][1].imshow(data, extent=extents, vmin=v_limits)
+    #ax[0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.angle(fey)
+    ax[1][1].set_ylabel("ky [m]")
+    ax[1][1].set_ylim(ylim)
+    ax[1][1].set_xlim(xlim)
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
+    v_limits = (-np.pi/2, np.pi/2)
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[1][1].imshow(data, extent=extents, vmin=v_limits)
+    #ax[1].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    data = np.angle(fez)
+    ax[2][1].set_xlabel("kx [m]")
+    ax[2][1].set_ylim(ylim)
+    ax[2][1].set_xlim(xlim)
+    extents = (np.min(kx), np.max(kx), np.min(ky), np.max(ky))
+    v_limits = (-np.pi/2, np.pi/2)
+    v_ticks = np.linspace(v_limits[0], v_limits[1], 6)
+
+    cax = ax[2][1].imshow(data, extent=extents, vmin=v_limits)
+    #ax[2].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
+
+    fig.set_tight_layout(True)
+
+def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1], ylim=[-1, -1]):
+
+    if xlim[0] == -1 and xlim[1] == -1:
+        xlim[0] = np.min(x)
+        xlim[1] = np.max(x)
+    if ylim[0] == -1 and ylim[1] == -1:
+        ylim[0] = np.min(y)
+        ylim[1] = np.max(y)
+    if zlim[0] == -1 and zlim[1] == -1:
+        zlim[1] = np.max([np.max(20*np.log10(np.abs(ex))), np.max(20*np.log10(np.abs(ey))), np.max(20*np.log10(np.abs(ez)))])
+        zlim[0] = zlim[1] - 100
+
+    s = 1.1
+    fig, ax = plt.subplots(3, 2, sharex=True, figsize=(6*s, 8*s))
+
+    data = 20*np.log10(np.abs(ex))
     ax[0][0].set_title("Mag: "+title)
     ax[0][0].set_ylim(ylim)
     ax[0][0].set_xlim(xlim)
@@ -123,7 +226,7 @@ def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1],
     cax = ax[0][0].imshow(data, extent=extents, vmin=v_limits)
     ax[0][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
 
-    data = np.abs(ey)
+    data = 20*np.log10(np.abs(ey))
     ax[1][0].set_ylabel("y [m]")
     ax[1][0].set_ylim(ylim)
     ax[1][0].set_xlim(xlim)
@@ -137,7 +240,7 @@ def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1],
     cax = ax[1][0].imshow(data, extent=extents, vmin=v_limits)
     ax[1][0].contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
 
-    data = np.abs(ez)
+    data = 20*np.log10(np.abs(ez))
     ax[2][0].set_xlabel("x [m]")
     ax[2][0].set_ylim(ylim)
     ax[2][0].set_xlim(xlim)
