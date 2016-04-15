@@ -197,6 +197,7 @@ def plot_farfield_kspace_2d_all(kx, ky, fex, fey, fez, title, zlim=[-1, -1], xli
 
     fig.set_tight_layout(True)
 
+
 def plot_nearfield_2d_all(x, y, ex, ey, ez, title, zlim=[-1, -1], xlim=[-1, -1], ylim=[-1, -1]):
 
     if xlim[0] == -1 and xlim[1] == -1:
@@ -320,9 +321,10 @@ def plot_farfield_3d_cartesian(theta, phi, ampl, title, zlim=[-1,-1]):
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
 
-def plot_farfield_3d_spherical(theta, phi, ampl, title, zlim=[-1,-1]):
+def plot_farfield_3d_spherical(theta, phi, ampl, title, zlim=[-1,-1], dynamic_range=40):
     """
     Plot the data in a 3D spherical environment
+    :param dynamic_range: range of values to plot on sphere
     :param theta: theta coordinate grid
     :param phi: phi coordinate grid
     :param ampl: amplitudes to plot
@@ -335,15 +337,18 @@ def plot_farfield_3d_spherical(theta, phi, ampl, title, zlim=[-1,-1]):
     scale = 1.2
     ax.set_xlim(-0.5*scale, 0.5*scale)
     ax.set_ylim(-0.5*scale, 0.5*scale)
-    ax.set_zlim(-0.65*scale, -0.15*scale)
+    ax.set_zlim(-0.9*scale, 0.1*scale)
 
     ax.set_title(title)
 
-    ampl -= np.min(ampl)
+    ampl -= (np.max(ampl)-dynamic_range)
     ampl /= np.max(ampl)
     x = ampl*np.sin(theta)*np.cos(phi)
     y = ampl*np.sin(theta)*np.sin(phi)
     z = ampl*np.cos(theta)
+    x[z<0] = 0
+    y[z<0] = 0
+    z[z<0] = 0
     z -= np.max(z)
     surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap=cm.jet,
                            linewidth=0.5, antialiased=True, shade=False)

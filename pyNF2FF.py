@@ -19,11 +19,11 @@ pad_factor = 4
 
 
 # Spherical farfield pattern settings
-scan_angle = np.deg2rad(10)
+scan_angle = np.deg2rad(1)
 theta_lim = (-np.pi/2+scan_angle, np.pi/2-scan_angle)
 phi_lim = (0, np.pi)
-theta_steps = 41
-phi_steps = 41
+theta_steps = 31
+phi_steps = 31
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
@@ -99,17 +99,10 @@ e_phi = C*e_phi
 e = nf2ff.calculate_total_e_field(e_theta, e_phi,0)
 print("[DONE]")
 
+print("Plotting data")
 mag_e = 20*np.log10(np.abs(e))
-norm_mag_e = mag_e - np.max(mag_e)
-
-z_upper = np.max([np.max(20*np.log10(np.abs(ex_grid))),
-                 np.max(20*np.log10(np.abs(ey_grid))),
-                 np.max(20*np.log10(np.abs(ez_grid)))])
-range = 80
 plotting.plot_nearfield_2d_all(x_grid, y_grid, ex_grid, ey_grid, ez_grid, "Nearfield")
-
 plotting.plot_farfield_kspace_2d_all(kx_grid, ky_grid, fex_grid, fey_grid, fez_grid, "Farfield")
-
 plotting.plot_farfield_3d_spherical(theta_grid, phi_grid, mag_e, "Farfield")
 plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_e, "Farfield")
 
