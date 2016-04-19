@@ -179,7 +179,7 @@ class TestFEKOFileUtilities(unittest.TestCase):
                     26, 25, 24, 23, 22, 21, 20, 19, 18]
         no_samples = [3, 3, 3]
         block_no = 0
-        theta_block, phi_block, gain_theta_block, gain_phi_block = rFF.read_frequency_block_from_spherical_dataset(
+        theta_block, phi_block, gain_theta_block, gain_phi_block = rFF.read_frequency_block_from_farfield_dataset(
             block_no,
             no_samples,
             theta,
@@ -229,22 +229,36 @@ class TestFEKOFileUtilities(unittest.TestCase):
         self.assertEqual(y_data_block, [1, 7, 6, 5, 4, 3, 2, 1, 0])
         self.assertEqual(z_data_block, [2, 7, 6, 5, 4, 3, 2, 1, 0])
 
-    def testExtractPhiCut(self):
+    def testExtractPhiCutFromCoordData(self):
         theta = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2])
         phi = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])
         gain = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
         no_samples = np.array([1, 3, 3])
 
-        theta_block_no = 0
-        cut = rFF.get_phi_cut(theta_block_no, no_samples, gain)
-        self.assertEqual(cut[0], [0])
-        self.assertEqual(cut[2], [2])
+        phi_block_no = 0
+        cut = rFF.get_phi_cut_from_coord_data(phi_block_no, no_samples, gain)
+        self.assertEqual(cut[0], 0)
+        self.assertEqual(cut[2], 2)
 
-        theta_block_no = 2
-        cut = rFF.get_phi_cut(theta_block_no, no_samples, gain)
+        phi_block_no = 2
+        cut = rFF.get_phi_cut_from_coord_data(phi_block_no, no_samples, gain)
         self.assertEqual(cut[0], 6)
         self.assertEqual(cut[2], 8)
 
+    def testExtractPhiCutFromGridData(self):
+        theta = np.array([[0, 1, 2], [0, 1, 2], [0, 1, 2]])
+        phi = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+        gain = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
+
+        phi_block_no = 0
+        cut = rFF.get_phi_cut_from_grid_data(phi_block_no, gain)
+        self.assertEqual(cut[0], 0)
+        self.assertEqual(cut[2], 2)
+
+        phi_block_no = 2
+        cut = rFF.get_phi_cut_from_grid_data(phi_block_no, gain)
+        self.assertEqual(cut[0], 6)
+        self.assertEqual(cut[2], 8)
 
     def test_transform_data_from_coord_to_grid_form(self):
         """Test the transformation of data from coordinate form to grid form"""

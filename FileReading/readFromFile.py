@@ -235,7 +235,7 @@ def parse_angle_range_line(line):
     return float(elements[1]), float(elements[2]), float(elements[3])
 
 
-def read_frequency_block_from_spherical_dataset(block, no_samples, theta, phi, gain_theta, gain_phi):
+def read_frequency_block_from_farfield_dataset(block, no_samples, theta, phi, gain_theta, gain_phi):
     """
     Extract a single frequency block from the dataset farfield data
     :param block: block no to extract
@@ -291,7 +291,8 @@ def transform_data_coord_to_grid(x_length, y_length, coord_data):
     grid = np.reshape(coord_data, (y_length, x_length))
     return grid
 
-def get_phi_cut(trace_no, no_samples, gain):
+
+def get_phi_cut_from_coord_data(trace_no, no_samples, gain):
     """
     Return a phi cut given a theta data set number
     :param trace_no: cut number in dataset
@@ -305,3 +306,15 @@ def get_phi_cut(trace_no, no_samples, gain):
     phi_cut = np.array(phi_cut)
 
     return phi_cut
+
+
+def get_phi_cut_from_grid_data(trace_no, gain):
+    """
+    Return a phi cut given a theta data set number
+    :param gain: 2D matrix of gain grid values
+    :param trace_no: cut number in dataset
+    :return: phi cut vector
+    """
+    gain_coord = np.reshape(gain,(1,len(gain)*len(gain[0])))[0]
+    no_samples = [1, len(gain[0]), len(gain)]
+    return get_phi_cut_from_coord_data(trace_no, no_samples, gain_coord)

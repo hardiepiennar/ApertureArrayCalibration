@@ -93,37 +93,6 @@ class NF2FFTestCases(unittest.TestCase):
             for y in np.arange(len(test_trans_data[0])):
                 self.assertEqual(trans_data[x][y], test_trans_data[x][y])
 
-    def test_nearfield_to_farfield_xyz(self):
-        nearfield_x = np.array([[0, 0, 0], [0, 2, 0], [0, 0, 0]])
-        nearfield_y = np.array([[0, 0, 0], [0, 0.1, 0], [0, 0, 0]])
-        scale = (float(1)/10)
-
-        N = 3
-        d = 2
-
-        farfield_test_x = (float(1)/N**2)*2*np.array([[np.exp(-2j*np.pi*-1*d/N - 2j*np.pi*-1*d/N),
-                                                        np.exp(-2j*np.pi*0*d/N - 2j*np.pi*-1*d/N),
-                                                        np.exp(-2j*np.pi*1*d/N - 2j*np.pi*-1*d/N)],
-                                                        [np.exp(-2j*np.pi*-1*d/N - 2j*np.pi*0*d/N),
-                                                        np.exp(-2j*np.pi*0*d/N - 2j*np.pi*0*d/N),
-                                                        np.exp(-2j*np.pi*1*d/N - 2j*np.pi*0*d/N)],
-                                                        [np.exp(-2j*np.pi*-1*d/N - 2j*np.pi*1*d/N),
-                                                        np.exp(-2j*np.pi*0*d/N - 2j*np.pi*1*d/N),
-                                                        np.exp(-2j*np.pi*1*d/N - 2j*np.pi*1*d/N)]])
-
-
-        farfield_test_y = 0.1*farfield_test_x/2
-
-        trans_farfield_x, trans_farfield_y = nf2ff.calc_nf2ff(nearfield_x, nearfield_y)
-
-        """Test if the transforms were done correctly for the x and y farfields"""
-        for y in np.arange(len(farfield_test_x)):
-            for x in np.arange(len(farfield_test_x[0])):
-                self.assertAlmostEqual(trans_farfield_x[y][x], farfield_test_x[y][x])
-        for y in np.arange(len(trans_farfield_y)):
-            for x in np.arange(len(trans_farfield_y[0])):
-                self.assertAlmostEqual(trans_farfield_y[y][x], farfield_test_y[y][x])
-
     def test_generate_kspace(self):
         x_grid = 0.1*np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
         y_grid = 0.1*np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
@@ -335,38 +304,33 @@ class NF2FFTestCases(unittest.TestCase):
         
         fe_spherical = nf2ff.interpolate_cartesian_to_spherical(kx_grid,ky_grid,fe_grid,wavenumber,theta,phi)
 
-        fe_spherical_test = np.array([[-1.19798150562089 + 19.3797511507843j,
-                                      -0.227964875625187 - 2.07083872882152j,
-                                      -7.98042564710115 + 4.81284813513545j,
-                                      -3.47463478357622 + 4.12300261398233j,
-                                      34.5652524272203 - 43.4613894696073j],
-                                     [0.316884874378104 + 0.192356769257137j,
-                                      -0.0115539438318393 + 0.148913211027039j,
-                                      -7.98042564710115 + 4.81284813513545j,
-                                      -0.173370941001693 + 3.70191446043908j,
-                                      -0.166156570604876 + 2.86011902866362j],
-                                     [-1.94415044619004 + 15.1691583332975j,
-                                      0.134466179122087 - 1.69826826556644j,
-                                      -7.98042564710115 + 4.81284813513545j,
-                                      -1.94169113866461 + 4.60548677858829j,
-                                      24.7469933111242 - 43.1344041703480j],
-                                     [-0.265038684720100 - 0.953366740538459j,
-                                      -0.0153679320156506 - 0.440670149314655j,
-                                      -7.98042564710115 + 4.81284813513545j,
-                                      0.126694991242735 - 1.08728625015510j,
-                                      -0.742216143509634 - 0.841813991415576j],
-                                     [34.5652524272203 - 43.4613894696072j,
-                                      -3.47463478357622 + 4.12300261398232j,
-                                      -7.98042564710115 + 4.81284813513545j,
-                                      -0.227964875625189 - 2.07083872882153j,
-                                      -1.19798150562087 + 19.3797511507843j]])
+        self.assertAlmostEqual(fe_spherical[0][0], 0)
+        self.assertAlmostEqual(fe_spherical[3][3], -0.01536793201565383-0.44067014931466802j)
+        self.assertAlmostEqual(fe_spherical[1][2], -7.9804256471011605+4.8128481351354457j)
+        self.assertAlmostEqual(fe_spherical[-1][-1], 0)
 
-        self.assertEqual(len(fe_spherical), len(fe_spherical_test))
-        self.assertEqual(len(fe_spherical[0]), len(fe_spherical_test[0]))
+    def test_nf2ff(self):
+        freq = 1e9
+        grid_x = np.array([[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2],
+                           [-2, -1, 0, 1, 2]])
+        grid_y = np.array([[-2, -2, -2, -2, -2], [-1, -1, -1, -1, -1], [0, 0, 0, 0, 0], [1, 1, 1, 1, 1],
+                           [2, 2, 2, 2, 2]])
+        nf_x_grid = np.array([[0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+        nf_y_grid = np.array([[0, 0, 0, 0, 0], [0 ,0, 0.1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+        theta = np.linspace(-np.pi/4, np.pi/4, 3)
+        phi = np.linspace(0, np.pi, 3)
+        theta_grid, phi_grid = np.meshgrid(theta, phi)
 
-        for y in np.arange(0, len(fe_spherical_test)):
-            for x in np.arange(1,len(fe_spherical_test[0])-1):
-                self.assertAlmostEqual(fe_spherical_test[y][x], fe_spherical[y][x])
+        e_theta, e_phi = nf2ff.calc_nf2ff(freq, grid_x, grid_y, nf_x_grid, nf_y_grid, theta_grid, phi_grid)
+        self.assertAlmostEqual(e_theta[0][0], 0.00062603852060522309-0.00070579709530884727j)
+        self.assertAlmostEqual(e_theta[0][1], 0.00081313743687209971-0.00047758266899805595j)
+        self.assertAlmostEqual(e_theta[1][2], -4.3892978727040892e-05+1.7225453461635786e-05j)
+        self.assertAlmostEqual(e_theta[2][0], -0.00092133292603638209+0.00020302563490658213j)
+
+        self.assertAlmostEqual(e_phi[0][0], 2.2133804160197362e-05-2.4953695611732681e-05j)
+        self.assertAlmostEqual(e_phi[0][1], 4.0656871843604999e-05-2.38791334499028e-05j)
+        self.assertAlmostEqual(e_phi[2][2], -2.2133804160197379e-05+2.4953695611732786e-05j)
+        self.assertAlmostEqual(e_phi[1][0], 0.0005150812656806909-0.00042350118706216801j)
 
     def end(self):
         pass

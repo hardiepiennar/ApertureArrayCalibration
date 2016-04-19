@@ -85,23 +85,67 @@ def calculate_total_e_field(ex, ey, ez):
     return e
 
 
-def calc_nf2ff(nearfield_x, nearfield_y):
-    """
-    Calculates the farfield given the nearfield data
-    :param grid_x: 2D matrix with x coords
-    :param grid_y: 2D matrix with y coords
-    :param grid_z: 2D matrix with z coords
-    :param nearfield_x: 2D matrix of complex nearfield_x values
-    :param nearfield_y: 2D matrix of complex nearfield_y values
-    :param nearfield_z: 2D matrix of complex nearfield_z values
-    :return farfield_x, farfield_y, farfield_z: complex farfield 2D matrices
+def calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, theta_grid, phi_grid, verbose=False, pad_factor=4):
     """
 
-    """Calculate the x and y farfields with the fourier transform"""
-    farfield_x = np.fft.fftshift(np.fft.ifft2(nearfield_x))
-    farfield_y = np.fft.fftshift(np.fft.ifft2(nearfield_y))
+    :param freq: frequency in Hz
+    :param x_grid: 2D grid matrix of x coordinates in m
+    :param y_grid: 2D grid matrix of y coordinates in m
+    :param ex_grid: 2D grid matrix of x directed nearfield values V/m
+    :param ey_grid: 2D grid matrix of y directed nearfield values V/m
+    :param theta_grid: 2D grid matrix of theta points to calculate in rad
+    :param phi_grid: 2D grid matrix of phi points to calculate in rad
+    :param verbose: Give information during method
+    :param pad_factor: amount of padding to add during angular spectrum calculation
+    :return e_theta, e_phi: theta and phi farfield values for given coordinates
+    """
+    if verbose:
+        print("Probing the ether for its fundamental constants")
+    frequency = freq
+    lambda0 = calc_freespace_wavelength(frequency)
+    wavenumber = calc_freespace_wavenumber(frequency)
+    if verbose:
+        print("Frequency:  "+str(frequency/1e6)+" MHz")
+        print("Wavelength: "+str(np.round(lambda0, 3))+" m")
+        print("Wavenumber: "+str(np.round(wavenumber, 3))+" rad/m\n")
 
-    return farfield_x, farfield_y
+    if verbose:
+        print("Increasing angular spectrum resolution with a zero padding factor of: "+str(pad_factor))
+    x_grid_pad, y_grid_pad, ex_grid_pad, ey_grid_pad, _ = pad_nearfield_grid(x_grid, y_grid,
+                                                                             ex_grid, ey_grid, [],
+                                                                             pad_factor)
+
+    if verbose:
+        print("Generating k-space")
+    kx_grid, ky_grid, _ = generate_kspace(x_grid_pad, y_grid_pad, wavenumber)
+
+    if verbose:
+        print("Calculating angular spectrum of nearfield..."),
+    fex_grid = calc_angular_spectrum(ex_grid_pad)
+    fey_grid = calc_angular_spectrum(ey_grid_pad)
+    if verbose:
+        print("[DONE]")
+
+    if verbose:
+        print("Interpolating angular spectrum data onto spherical grid..."),
+    fex_spherical = interpolate_cartesian_to_spherical(kx_grid, ky_grid, fex_grid, wavenumber,
+                                                       theta_grid[0], phi_grid[:, 0])*np.sqrt(2)*len(fex_grid)**2
+    fey_spherical = interpolate_cartesian_to_spherical(kx_grid, ky_grid, fey_grid, wavenumber,
+                                                       theta_grid[0], phi_grid[:, 0])*np.sqrt(2)*len(fex_grid)**2
+    if verbose:
+        print("[DONE]")
+
+    if verbose:
+        print("Calculating theta and phi components..."),
+    r = 10000
+    C = calc_propagation_coef(frequency, r)
+    e_theta, e_phi = transform_cartesian_to_spherical(theta_grid, phi_grid, fex_spherical, fey_spherical)
+    e_theta *= C
+    e_phi *= C
+    if verbose:
+        print("[DONE]\n")
+
+    return e_theta, e_phi
 
 
 def generate_kspace(grid_x, grid_y, wavenumber):
@@ -135,9 +179,10 @@ def calc_angular_spectrum(nearfield):
     :return farfield: angular spectrum
     """
 
-    farfield = np.fft.fftshift(np.fft.ifft2(nearfield))
+    farfield = np.fft.ifftshift(np.fft.ifft2(nearfield))
 
     return farfield
+
 
 def generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim):
     """
@@ -218,7 +263,6 @@ def calc_propagation_coef(freq, distance):
     """
     k0 = calc_freespace_wavenumber(freq)
     C = 1j*(k0*np.exp(-1j*k0*distance))/(2*np.pi*distance)
-
     return C
 
 
@@ -240,6 +284,7 @@ def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z, pa
 
     return grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z
 
+
 def interpolate_cartesian_to_spherical(kx_grid, ky_grid, fe_grid, wavenumber, theta, phi):
     """
     :param kx_grid: wavenumber x grid
@@ -250,19 +295,19 @@ def interpolate_cartesian_to_spherical(kx_grid, ky_grid, fe_grid, wavenumber, th
     :param phi: phi points to calculate in rad
     :return: angular spectrum in spherical grid
     """
-    fe_spherical_real_func = interpolate.RectBivariateSpline(kx_grid[0], ky_grid[:, 0], np.real(fe_grid))
-    fe_spherical_imag_func = interpolate.RectBivariateSpline(kx_grid[0], ky_grid[:, 0], np.imag(fe_grid))
+    fe_spherical_real_func = interpolate.RectBivariateSpline(kx_grid[0], ky_grid[:, 0], np.real(np.conj(fe_grid)))
+    fe_spherical_imag_func = interpolate.RectBivariateSpline(kx_grid[0], ky_grid[:, 0], np.imag(np.conj(fe_grid)))
 
     fe_spherical = np.reshape(np.zeros(len(phi)*len(theta), dtype=complex), (len(phi), len(theta)))
 
     for phi_i in np.arange(len(phi)):
         for theta_i in np.arange(len(theta)):
-            x_coord = wavenumber*np.sin(theta[theta_i])*np.cos(phi[phi_i])
-            y_coord = wavenumber*np.sin(theta[theta_i])*np.sin(phi[phi_i])
-            fe_spherical[phi_i][theta_i] = complex(fe_spherical_real_func(x_coord, y_coord)[0]) - \
-                1j*complex(fe_spherical_imag_func(x_coord, y_coord)[0])
-
+            y_coord = wavenumber*np.sin(theta[theta_i])*np.cos(phi[phi_i])
+            x_coord = wavenumber*np.sin(theta[theta_i])*np.sin(phi[phi_i])
+            fe_spherical[phi_i][theta_i] = complex(fe_spherical_real_func(x_coord, y_coord)) + \
+                1j*complex(fe_spherical_imag_func(x_coord, y_coord))
     return fe_spherical
+
 
 def calc_dft2(x, y, z, data):
     """
