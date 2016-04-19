@@ -12,7 +12,7 @@ import NF2FF.NFFFandFPlotting as plotting
 import matplotlib.pyplot as plt
 
 """General settings"""
-filename_nearfield = "WaveguideHorn85deg.efe"
+filename_nearfield = "WaveguideHorn80degx2sep.efe"
 filename_farfield = "WaveguideHorn.ffe"
 separation = 0.0899377374000528
 frequency_block = 0  # Select the first frequency block in the file
@@ -68,12 +68,13 @@ print("Generating theta phi spherical grid\n")
 theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim)
 
 print("Starting NF2FF transform...")
-e_theta, e_phi = nf2ff.calc_nf2ff(frequency, x_grid, y_grid, ex_grid, ey_grid, theta_grid, phi_grid, verbose=True)
-
-
-e = 1/(2*120*np.pi)*(e_theta*np.conj(e_theta)+e_phi*np.conj(e_phi))
-mag_e = 10*np.log10(np.abs(e))
-#mag_e = 20 + mag_e - np.max(mag_e)
+r = 10000
+e_theta, e_phi = nf2ff.calc_nf2ff(frequency, x_grid, y_grid, ex_grid, ey_grid, r, theta_grid, phi_grid, verbose=True)
+U = nf2ff.calc_radiation_intensity(e_theta, e_phi)
+#P_rad = nf2ff.calc_radiated_power(theta_grid, phi_grid, U)[0]  # TODO: Get a faster method to integrate
+P_rad = 0.07965391801476739
+D = 2*np.pi*U/P_rad/separation  # TODO: Not sure why this separation term is needed!
+mag_e = 10*np.log10(np.abs(D))
 print("[DONE]\n")
 
 print("Importing farfield data from " + filename_nearfield)
@@ -108,8 +109,8 @@ e_ff = nf2ff.calculate_total_gain(e_theta_grid_ff, e_phi_grid_ff)
 
 print("Plotting data..."),
 if(False):
-    plotting.plot_nearfield_2d_all(x_grid, y_grid, ex_grid, ey_grid, ez_grid, "Nearfield")
-    plotting.plot_farfield_kspace_2d_all(kx_grid, ky_grid, fex_grid, fey_grid, fez_grid, "Farfield")
+    #plotting.plot_nearfield_2d_all(x_grid, y_grid, ex_grid, ey_grid, ez_grid, "Nearfield")
+    #plotting.plot_farfield_kspace_2d_all(kx_grid, ky_grid, fex_grid, fey_grid, fez_grid, "Farfield")
 
     plotting.plot_farfield_3d_spherical(theta_grid, phi_grid, mag_e, "Transformed Farfield")
     plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_e, "TransformedFarfield")
@@ -118,13 +119,13 @@ if(False):
     plotting.plot_farfield_3d_spherical(theta_grid_ff, phi_grid_ff, e_ff, "FEKO Farfield")
 
 if(True):
-    e_cut_nf = rff.get_phi_cut_from_grid_data(50, mag_e-np.max(mag_e))
-    e_cut_ff = rff.get_phi_cut_from_grid_data(50, e_ff-np.max(e_ff))
+    e_cut_nf = rff.get_phi_cut_from_grid_data(50, mag_e)#-np.max(mag_e))
+    e_cut_ff = rff.get_phi_cut_from_grid_data(50, e_ff)#-np.max(e_ff))
     plt.figure()
     plt.plot(np.rad2deg(theta_grid[50]), e_cut_nf)
     plt.plot(np.rad2deg(theta_grid_ff[0]), e_cut_ff)
     plt.xlim(-90, 90)
-    plt.ylim(-60, 0)
+    plt.ylim(-40, 20)
     plt.grid(True)
     plt.axvline(-60)
     plt.axvline(60)

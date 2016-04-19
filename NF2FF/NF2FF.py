@@ -9,6 +9,7 @@ Hardie Pienaar
 import numpy as np
 from scipy import interpolate
 from scipy.interpolate import griddata
+from scipy import integrate
 
 
 def calc_recommended_sampling_param(d, m, p, z, lambd):
@@ -85,7 +86,7 @@ def calculate_total_e_field(ex, ey, ez):
     return e
 
 
-def calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, theta_grid, phi_grid, verbose=False, pad_factor=4):
+def calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, distance, theta_grid, phi_grid, verbose=False, pad_factor=4):
     """
 
     :param freq: frequency in Hz
@@ -137,8 +138,8 @@ def calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, theta_grid, phi_grid, ver
 
     if verbose:
         print("Calculating theta and phi components..."),
-    r = 10000
-    C = calc_propagation_coef(frequency, r)
+
+    C = calc_propagation_coef(frequency, distance)
     e_theta, e_phi = transform_cartesian_to_spherical(theta_grid, phi_grid, fex_spherical, fey_spherical)
     e_theta *= C
     e_phi *= C
@@ -264,6 +265,37 @@ def calc_propagation_coef(freq, distance):
     k0 = calc_freespace_wavenumber(freq)
     C = 1j*(k0*np.exp(-1j*k0*distance))/(2*np.pi*distance)
     return C
+
+
+def calc_radiation_intensity(e_theta, e_phi):
+    """
+    Calculates the radiation intensity (power radiated per solid angle) W/rad^2
+    :param e_theta: e_field in theta direction
+    :param e_phi: e_field in phi direction
+    :return U, radiation intensity:
+    """
+    c0, e0, u0 = get_fundamental_constants()
+    z0 = np.sqrt(u0/e0)
+    U = (float(1)/(2*z0))*(e_theta*np.conj(e_theta)+e_phi*np.conj(e_phi))
+    return np.real(U)
+
+
+def calc_radiated_power(theta_grid, phi_grid, U_grid):
+    """
+    Calculates the total radiated power W over the given theta phi grid
+    :param theta_grid: theta 2D matrix grid of angles in rad
+    :param phi_grid: phi 2D matrix grid of angles in rad
+    :param U_grid: Radiation intensity grid W/rad^2
+    :return P_rad: Radiated power W
+    """
+    I = U_grid
+    I_interp = interpolate.interp2d(phi_grid[:, 0], theta_grid[0], I)
+    I_func = lambda phi, theta: I_interp(phi, theta)*np.cos(theta)
+    theta_start, theta_stop = np.min(theta_grid), np.max(theta_grid)
+    phi_start, phi_stop = lambda theta: np.min(phi_grid), lambda theta: np.max(phi_grid)
+    P_rad = integrate.dblquad(I_func, theta_start, theta_stop, phi_start, phi_stop)
+
+    return P_rad
 
 
 def pad_nearfield_grid(grid_x, grid_y, nearfield_x, nearfield_y, nearfield_z, pad_factor):

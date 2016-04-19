@@ -320,8 +320,9 @@ class NF2FFTestCases(unittest.TestCase):
         theta = np.linspace(-np.pi/4, np.pi/4, 3)
         phi = np.linspace(0, np.pi, 3)
         theta_grid, phi_grid = np.meshgrid(theta, phi)
+        distance = 10000
 
-        e_theta, e_phi = nf2ff.calc_nf2ff(freq, grid_x, grid_y, nf_x_grid, nf_y_grid, theta_grid, phi_grid)
+        e_theta, e_phi = nf2ff.calc_nf2ff(freq, grid_x, grid_y, nf_x_grid, nf_y_grid, distance, theta_grid, phi_grid,)
         self.assertAlmostEqual(e_theta[0][0], 0.00062603852060522309-0.00070579709530884727j)
         self.assertAlmostEqual(e_theta[0][1], 0.00081313743687209971-0.00047758266899805595j)
         self.assertAlmostEqual(e_theta[1][2], -4.3892978727040892e-05+1.7225453461635786e-05j)
@@ -331,6 +332,25 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertAlmostEqual(e_phi[0][1], 4.0656871843604999e-05-2.38791334499028e-05j)
         self.assertAlmostEqual(e_phi[2][2], -2.2133804160197379e-05+2.4953695611732786e-05j)
         self.assertAlmostEqual(e_phi[1][0], 0.0005150812656806909-0.00042350118706216801j)
+
+    def test_calc_radiation_intensity(self):
+        e_theta = 2+1j
+        e_phi = 1-3j
+        U = nf2ff.calc_radiation_intensity(e_theta, e_phi)
+        Z0 = 376.73031
+        U_test = (e_theta*np.conj(e_theta) + e_phi*np.conj(e_phi))/(2*Z0)
+
+        self.assertAlmostEqual(U, U_test)
+
+    def test_calc_radiated_power(self):
+        theta = np.linspace(-np.pi/2, np.pi/2, 20)
+        phi = np.linspace(0, np.pi, 20)
+        theta_grid, phi_grid = np.meshgrid(theta, phi)
+        U = np.ones((len(phi), len(theta)))
+
+        P_rad, error = nf2ff.calc_radiated_power(theta_grid, phi_grid, U)
+
+        self.assertAlmostEqual(P_rad, 2*np.pi)
 
     def end(self):
         pass
