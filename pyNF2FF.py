@@ -48,6 +48,10 @@ print("Separation:  "+str(round(separation, 3))+" m\n")
 print("Extracting block: "+str(frequency_block)+" from imported dataset\n")
 x, y, z, ex, ey, ez = rff.read_frequency_block_from_nearfield_dataset(frequency_block, coord_structure, x, y, z,
                                                                       ex, ey, ez)
+print("Inject some noise EXPERIMENTAL")
+ex += np.random.rand(len(ex))*0.001
+ey += np.random.rand(len(ex))*0.001
+
 print("Probing the ether for its fundamental constants")
 c0, e0, u0 = nf2ff.get_fundamental_constants()
 frequency = f[frequency_block*(x_points*y_points)]
@@ -69,12 +73,13 @@ theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_
 
 print("Starting NF2FF transform...")
 r = 10000
-e_theta, e_phi = nf2ff.calc_nf2ff(frequency, x_grid, y_grid, ex_grid, ey_grid, r, theta_grid, phi_grid, verbose=True)
+e_theta, e_phi = nf2ff.calc_nf2ff(frequency, x_grid, y_grid, ex_grid, ey_grid, r, theta_grid, phi_grid, pad_factor=pad_factor, verbose=True)
 U = nf2ff.calc_radiation_intensity(e_theta, e_phi)
 #P_rad = nf2ff.calc_radiated_power(theta_grid, phi_grid, U)[0]  # TODO: Get a faster method to integrate
 P_rad = 0.07965391801476739
 D = 2*np.pi*U/P_rad/separation  # TODO: Not sure why this separation term is needed!
-mag_e = 10*np.log10(np.abs(D))
+mag_D = 10*np.log10(np.abs(D))
+norm_mag_d = mag_D - np.max(mag_D)
 print("[DONE]\n")
 
 print("Importing farfield data from " + filename_nearfield)
@@ -106,26 +111,35 @@ phi_grid_ff = rff.transform_data_coord_to_grid(e_theta_points, e_phi_points, phi
 e_theta_grid_ff = rff.transform_data_coord_to_grid(e_theta_points, e_phi_points, e_theta_ff)
 e_phi_grid_ff = rff.transform_data_coord_to_grid(e_theta_points, e_phi_points, e_phi_ff)
 e_ff = nf2ff.calculate_total_gain(e_theta_grid_ff, e_phi_grid_ff)
+norm_e_ff = e_ff - np.max(e_ff)
+
+print("Calculating equivelent multi")
+norm_nf = np.abs(D)/np.max(np.abs(D))
+D_act = 10**(e_ff/10)
+norm_ff = np.abs(D_act)/np.max(np.abs(D_act))
+empl = nf2ff.calc_empl(norm_nf, norm_ff)
 
 print("Plotting data..."),
 if(False):
     #plotting.plot_nearfield_2d_all(x_grid, y_grid, ex_grid, ey_grid, ez_grid, "Nearfield")
     #plotting.plot_farfield_kspace_2d_all(kx_grid, ky_grid, fex_grid, fey_grid, fez_grid, "Farfield")
 
-    plotting.plot_farfield_3d_spherical(theta_grid, phi_grid, mag_e, "Transformed Farfield")
-    plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_e, "TransformedFarfield")
+    plotting.plot_farfield_3d_spherical(theta_grid, phi_grid, mag_D, "Transformed Farfield")
+    plotting.plot_farfield_3d_cartesian(theta_grid, phi_grid, mag_D, "TransformedFarfield")
 
     plotting.plot_farfield_3d_cartesian(theta_grid_ff, phi_grid_ff, e_ff, "FEKO Farfield")
     plotting.plot_farfield_3d_spherical(theta_grid_ff, phi_grid_ff, e_ff, "FEKO Farfield")
 
 if(True):
-    e_cut_nf = rff.get_phi_cut_from_grid_data(50, mag_e)#-np.max(mag_e))
-    e_cut_ff = rff.get_phi_cut_from_grid_data(50, e_ff)#-np.max(e_ff))
+    e_cut_nf = rff.get_phi_cut_from_grid_data(50, norm_mag_d)
+    e_cut_ff = rff.get_phi_cut_from_grid_data(50, norm_e_ff)
+    cut_empl = rff.get_phi_cut_from_grid_data(50, empl)
     plt.figure()
     plt.plot(np.rad2deg(theta_grid[50]), e_cut_nf)
     plt.plot(np.rad2deg(theta_grid_ff[0]), e_cut_ff)
+    plt.plot(np.rad2deg(theta_grid_ff[0]), cut_empl)
     plt.xlim(-90, 90)
-    plt.ylim(-40, 20)
+    plt.ylim(-130, 0)
     plt.grid(True)
     plt.axvline(-60)
     plt.axvline(60)
@@ -136,9 +150,7 @@ print("[DONE]")
 
 plt.show()
 
-# TODO: Check scaling with some principle cuts
 # TODO: Program comparison vectors
-# TODO: Import real farfield
 # TODO: Decide on comparison methodology
 # TODO: Decide on errors to focus on
 # TODO: Write error injection code
@@ -146,4 +158,20 @@ plt.show()
 # TODO: Run comparisons for all error types
 # TODO: Refactor NFFFandFPlotting
 # TODO: Add some 2D phase unwrapping?
-# TODO: Sort out scaling factor
+
+"""
+Localization error characterisation
+-----------------------------------
+Sweep over frequency
+    Read in ideal nearfield from feko
+    Read in ideal farfield from feko
+    Calculate farfield from ideal nearfield data to find normalisation values
+    Define error injection boundaries (meters from ideal x and y)
+    Sweep over error amplitude:
+        Inject error into ideal nearfield coordinates
+        Create interpolated nearfield function from corrupted coordinate data
+        Calculate data onto equally spaced nearfield grid
+        Use corrupted data to calculate farfield
+        Calculate farfield error (principle cuts, max error, min error, average error)
+        Store error data
+"""

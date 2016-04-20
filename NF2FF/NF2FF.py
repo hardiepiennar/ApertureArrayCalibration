@@ -279,6 +279,17 @@ def calc_radiation_intensity(e_theta, e_phi):
     U = (float(1)/(2*z0))*(e_theta*np.conj(e_theta)+e_phi*np.conj(e_phi))
     return np.real(U)
 
+def calc_empl(x1, x2):
+    """
+    Calculates the equivelent multipath level between 2 signals. The default 0.5 factor has been omitted assuming that
+    x1 or x2 is absolute correct.
+    :param x1: matrix of values
+    :param x2: matrix of values
+    :return: equivelent multipath level in dB
+    """
+    empl = np.abs(np.abs(x1) - np.abs(x2))
+    empl_db = 20*np.log10(np.abs(empl))
+    return empl_db
 
 def calc_radiated_power(theta_grid, phi_grid, U_grid):
     """

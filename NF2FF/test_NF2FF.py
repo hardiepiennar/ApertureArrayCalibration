@@ -352,6 +352,16 @@ class NF2FFTestCases(unittest.TestCase):
 
         self.assertAlmostEqual(P_rad, 2*np.pi)
 
+    def test_calc_empl(self):
+        x1 = np.array([1, 2, -3])
+        x2 = np.array([2, 2.1, -4])
+        empl = nf2ff.calc_empl(x1, x2)
+        empl_test = 20*np.log10(np.abs(np.abs(x1)-np.abs(x2)))
+
+        self.assertEqual(empl_test[0], empl[0])
+        self.assertEqual(empl_test[1], empl[1])
+        self.assertEqual(empl_test[2], empl[2])
+
     def end(self):
         pass
 
