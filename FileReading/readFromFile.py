@@ -69,7 +69,7 @@ def read_farfieldscan_datafile(filename):
     return [theta, phi, data, frequency, tx_power, distance]
 
 
-def read_fekofarfield_datafile(filename):
+def read_fekofarfield_datafile(filename, verbose=False):
     """
     Read FEKO antenna farfield pattern from file
     :param filename - name of datafile, needs to be a .ffe file from feko
@@ -141,10 +141,18 @@ def read_fekofarfield_datafile(filename):
     gain_theta = np.array(gain_theta)
     gain_phi = np.array(gain_phi)
 
+    if verbose:
+        print("File imported with following structure:")
+        print("Frequencies:   "+str(no_f_samples))
+        print("Theta-Points:  "+str(no_theta_samples))
+        print("Phi-Points:    "+str(no_phi_samples))
+        print("Theta-Step:    "+str(np.abs(theta[1]-theta[0]))+" deg")
+        print("Phi-Step:      "+str(np.abs(phi[no_f_samples*no_theta_samples*no_phi_samples]-phi[0]))+" deg\n")
+
     return f, theta, phi, gain_theta, gain_phi, [no_f_samples, no_theta_samples, no_phi_samples]
 
 
-def read_fekonearfield_datafile(filename):
+def read_fekonearfield_datafile(filename, verbose=False):
     # Header structure constants
     frequency_line = 1
     no_ex_line = 3
@@ -222,6 +230,14 @@ def read_fekonearfield_datafile(filename):
     ex = np.array(ex)
     ey = np.array(ey)
     ez = np.array(ez)
+
+    if verbose:
+        print("File imported with following structure:")
+        print("Frequencies: "+str(no_f_samples))
+        print("X-Points:    "+str(no_ex_samples))
+        print("Y-Points:    "+str(no_ey_samples))
+        print("Z-Points:    "+str(no_ez_samples))
+        print("Delta:       "+str(np.abs(x[1] - x[0]))+" m")
 
     return f, x, y, z, ex, ey, ez, [no_f_samples, no_ex_samples, no_ey_samples, no_ez_samples]
 

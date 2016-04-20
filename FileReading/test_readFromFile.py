@@ -54,7 +54,7 @@ class TestReadFEKOFarfieldFile(unittest.TestCase):
     def testReadFEKOFarfieldData(self):
         # Read FEKO antenna patter from file
         filename = "testAntennaPatternFile.ffe"
-        f, theta, phi, gain_theta, gain_phi, no_samples = rFF.read_fekofarfield_datafile(filename)
+        f, theta, phi, gain_theta, gain_phi, no_samples = rFF.read_fekofarfield_datafile(filename, verbose=False)
 
         # Check that the no_samples vector is correct
         self.assertEquals(no_samples[0], 3)
@@ -100,7 +100,7 @@ class TestReadFEKONearfieldFile(unittest.TestCase):
     def testReadFEKONearfieldData(self):
         # Read FEKO nearfield from file
         filename = "testNearfieldPatternFile.efe"
-        f, x, y, z, ex, ey, ez, no_samples = rFF.read_fekonearfield_datafile(filename)
+        f, x, y, z, ex, ey, ez, no_samples = rFF.read_fekonearfield_datafile(filename, verbose=False)
 
         # Check that the no_samples vector is correct
         self.assertEquals(no_samples[0], 2)

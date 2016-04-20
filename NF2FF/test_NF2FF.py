@@ -333,6 +333,33 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertAlmostEqual(e_phi[2][2], -2.2133804160197379e-05+2.4953695611732786e-05j)
         self.assertAlmostEqual(e_phi[1][0], 0.0005150812656806909-0.00042350118706216801j)
 
+    def test_nf2ff_from_coord_data(self):
+        freq = 1e9
+        x = np.array([-2, -1, 0, 1, 2, -2, -1, 0, 1, 2, -2, -1, 0, 1, 2, -2, -1, 0, 1, 2, -2, -1, 0, 1, 2])
+        x_points = 5
+        y_points = 5
+        y = np.array([-2, -2, -2, -2, -2, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+        nf_x = np.array([0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        nf_y = np.array([0, 0, 0, 0, 0, 0 ,0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        theta_points= 3
+        theta_lim = (-np.pi/4, np.pi/4)
+        phi_points = 3
+        phi_lim = (0, np.pi)
+
+        theta_grid, phi_grid, e_theta, e_phi = nf2ff.calc_nf2ff_from_coord_data(freq, x_points, y_points, x, y,
+                                                                                nf_x, nf_y,
+                                                                                theta_points, phi_points,
+                                                                                theta_lim, phi_lim)
+        self.assertAlmostEqual(e_theta[0][0], 0.00062603852060522309-0.00070579709530884727j)
+        self.assertAlmostEqual(e_theta[0][1], 0.00081313743687209971-0.00047758266899805595j)
+        self.assertAlmostEqual(e_theta[1][2], -4.3892978727040892e-05+1.7225453461635786e-05j)
+        self.assertAlmostEqual(e_theta[2][0], -0.00092133292603638209+0.00020302563490658213j)
+
+        self.assertAlmostEqual(e_phi[0][0], 2.2133804160197362e-05-2.4953695611732681e-05j)
+        self.assertAlmostEqual(e_phi[0][1], 4.0656871843604999e-05-2.38791334499028e-05j)
+        self.assertAlmostEqual(e_phi[2][2], -2.2133804160197379e-05+2.4953695611732786e-05j)
+        self.assertAlmostEqual(e_phi[1][0], 0.0005150812656806909-0.00042350118706216801j)
+
     def test_calc_radiation_intensity(self):
         e_theta = 2+1j
         e_phi = 1-3j

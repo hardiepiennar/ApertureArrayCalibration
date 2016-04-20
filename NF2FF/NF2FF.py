@@ -10,6 +10,7 @@ import numpy as np
 from scipy import interpolate
 from scipy.interpolate import griddata
 from scipy import integrate
+import FileReading.readFromFile as rff
 
 
 def calc_recommended_sampling_param(d, m, p, z, lambd):
@@ -88,7 +89,7 @@ def calculate_total_e_field(ex, ey, ez):
 
 def calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, distance, theta_grid, phi_grid, verbose=False, pad_factor=4):
     """
-
+    Calculate the farfield e_theta and e_phi at the given distance from grid data
     :param freq: frequency in Hz
     :param x_grid: 2D grid matrix of x coordinates in m
     :param y_grid: 2D grid matrix of y coordinates in m
@@ -147,6 +148,48 @@ def calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, distance, theta_grid, phi
         print("[DONE]\n")
 
     return e_theta, e_phi
+
+
+def calc_nf2ff_from_coord_data(freq, x_points, y_points, x, y, ex, ey, theta_steps, phi_steps, theta_lim, phi_lim,
+                               verbose=False, pad_factor=4):
+    """
+    Calculate e_theta and e_phi given coord data
+    :param freq: frequency in Hz
+    :param x: x coordinates in m
+    :param y: y coordinates in m
+    :param ex: x directed nearfield values V/m
+    :param ey: y directed nearfield values V/m
+    :param theta: theta points to calculate in rad
+    :param phi: phi points to calculate in rad
+    :param verbose: Give information during method
+    :param pad_factor: amount of padding to add during angular spectrum calculation
+    :return e_theta, e_phi: theta and phi farfield values for given coordinates
+    """
+
+    lambda0 = calc_freespace_wavelength(freq)
+    wavenumber = calc_freespace_wavenumber(freq)
+    if verbose:
+        print("Frequency:  "+str(freq/1e6)+" MHz")
+        print("Wavelength: "+str(np.round(lambda0, 3))+" m")
+        print("Wavenumber: "+str(np.round(wavenumber, 3))+" rad/m\n")
+
+    if verbose:
+        print("Transforming data into meshgrid")
+    x_grid = rff.transform_data_coord_to_grid(x_points, y_points, x)
+    y_grid = rff.transform_data_coord_to_grid(x_points, y_points, y)
+    ex_grid = rff.transform_data_coord_to_grid(x_points, y_points, ex)
+    ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
+
+    if verbose:
+        print("Generating theta phi spherical grid\n")
+    theta_grid, phi_grid = generate_spherical_theta_phi_grid(theta_steps, phi_steps, theta_lim, phi_lim)
+
+    if verbose:
+        print("Starting NF2FF transform...")
+    r = 10000
+    e_theta, e_phi = calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, r, theta_grid, phi_grid,
+                                pad_factor=pad_factor, verbose=True)
+    return theta_grid, phi_grid, e_theta, e_phi
 
 
 def generate_kspace(grid_x, grid_y, wavenumber):
@@ -279,6 +322,7 @@ def calc_radiation_intensity(e_theta, e_phi):
     U = (float(1)/(2*z0))*(e_theta*np.conj(e_theta)+e_phi*np.conj(e_phi))
     return np.real(U)
 
+
 def calc_empl(x1, x2):
     """
     Calculates the equivelent multipath level between 2 signals. The default 0.5 factor has been omitted assuming that
@@ -290,6 +334,7 @@ def calc_empl(x1, x2):
     empl = np.abs(np.abs(x1) - np.abs(x2))
     empl_db = 20*np.log10(np.abs(empl))
     return empl_db
+
 
 def calc_radiated_power(theta_grid, phi_grid, U_grid):
     """
