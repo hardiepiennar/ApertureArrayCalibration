@@ -316,13 +316,14 @@ class NF2FFTestCases(unittest.TestCase):
         grid_y = np.array([[-2, -2, -2, -2, -2], [-1, -1, -1, -1, -1], [0, 0, 0, 0, 0], [1, 1, 1, 1, 1],
                            [2, 2, 2, 2, 2]])
         nf_x_grid = np.array([[0, 0, 0, 0, 0], [0, 0, 2, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
-        nf_y_grid = np.array([[0, 0, 0, 0, 0], [0 ,0, 0.1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
+        nf_y_grid = np.array([[0, 0, 0, 0, 0], [0, 0, 0.1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
         theta = np.linspace(-np.pi/4, np.pi/4, 3)
         phi = np.linspace(0, np.pi, 3)
         theta_grid, phi_grid = np.meshgrid(theta, phi)
         distance = 10000
 
-        e_theta, e_phi = nf2ff.calc_nf2ff(freq, grid_x, grid_y, nf_x_grid, nf_y_grid, distance, theta_grid, phi_grid,)
+        e_theta, e_phi = nf2ff.calc_nf2ff(freq, grid_x, grid_y, nf_x_grid, nf_y_grid, distance, theta_grid, phi_grid,
+                                          verbose=False)
         self.assertAlmostEqual(e_theta[0][0], 0.00062603852060522309-0.00070579709530884727j)
         self.assertAlmostEqual(e_theta[0][1], 0.00081313743687209971-0.00047758266899805595j)
         self.assertAlmostEqual(e_theta[1][2], -4.3892978727040892e-05+1.7225453461635786e-05j)
@@ -345,11 +346,10 @@ class NF2FFTestCases(unittest.TestCase):
         theta_lim = (-np.pi/4, np.pi/4)
         phi_points = 3
         phi_lim = (0, np.pi)
-
         theta_grid, phi_grid, e_theta, e_phi = nf2ff.calc_nf2ff_from_coord_data(freq, x_points, y_points, x, y,
                                                                                 nf_x, nf_y,
                                                                                 theta_points, phi_points,
-                                                                                theta_lim, phi_lim)
+                                                                                theta_lim, phi_lim, verbose=False)
         self.assertAlmostEqual(e_theta[0][0], 0.00062603852060522309-0.00070579709530884727j)
         self.assertAlmostEqual(e_theta[0][1], 0.00081313743687209971-0.00047758266899805595j)
         self.assertAlmostEqual(e_theta[1][2], -4.3892978727040892e-05+1.7225453461635786e-05j)
@@ -388,6 +388,31 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(empl_test[0], empl[0])
         self.assertEqual(empl_test[1], empl[1])
         self.assertEqual(empl_test[2], empl[2])
+
+    def test_add_position_noise(self):
+        x = np.array([[0, 1, 2], [0, 1, 2], [0, 1, 2]])
+        y = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+        z = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
+        x_n_max = 0.1
+        y_n_max = 0.1
+
+        z_n = nf2ff.add_position_noise(x, y, z, x_n_max, y_n_max)
+
+        max_error_length = np.sqrt(x_n_max**2 + y_n_max**2)*4
+        # Test that error is still in bounds
+        self.assertGreaterEqual(z_n[0][0], z[0][0] - max_error_length)
+        self.assertLessEqual(z_n[0][0], z[0][0] + max_error_length)
+        self.assertGreaterEqual(z_n[1][0], z[1][0] - max_error_length)
+        self.assertLessEqual(z_n[1][0], z[1][0] + max_error_length)
+        self.assertGreaterEqual(z_n[-1][-1], z[-1][-1] - max_error_length)
+        self.assertLessEqual(z_n[-1][-1], z[-1][-1] + max_error_length)
+
+        # Test that there is at-least some measure of error
+        expression = z[0][0] == z_n[0][0] and z[0][1] == z_n[0][1] and z[0][2] == z_n[0][2] and\
+            z[1][0] == z_n[1][0] and z[1][1] == z_n[1][1] and z[1][2] == z_n[1][2] and\
+            z[2][0] == z_n[2][0] and z[2][1] == z_n[2][1] and z[2][2] == z_n[2][2]
+        self.assertFalse(expression)
+
 
     def end(self):
         pass

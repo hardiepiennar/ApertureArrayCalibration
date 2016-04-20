@@ -188,7 +188,7 @@ def calc_nf2ff_from_coord_data(freq, x_points, y_points, x, y, ex, ey, theta_ste
         print("Starting NF2FF transform...")
     r = 10000
     e_theta, e_phi = calc_nf2ff(freq, x_grid, y_grid, ex_grid, ey_grid, r, theta_grid, phi_grid,
-                                pad_factor=pad_factor, verbose=True)
+                                pad_factor=pad_factor, verbose=verbose)
     return theta_grid, phi_grid, e_theta, e_phi
 
 
@@ -395,6 +395,30 @@ def interpolate_cartesian_to_spherical(kx_grid, ky_grid, fe_grid, wavenumber, th
             fe_spherical[phi_i][theta_i] = complex(fe_spherical_real_func(x_coord, y_coord)) + \
                 1j*complex(fe_spherical_imag_func(x_coord, y_coord))
     return fe_spherical
+
+
+def add_position_noise(x_grid, y_grid, z_grid, x_n_amp, y_n_amp):
+    """
+    Add noise to data by probing interpolated z-grid at noisy coordinates and rebuilding z grid as an equally spaced
+    grid with the noisy probe points
+    :param x_grid: 2D matrix grid of x coordinates
+    :param y_grid: 2D matrix grid of y coordinates
+    :param z_grid: 2D matrix grid of function to make noisy
+    :param x_n_amp: max x noise amplitude
+    :param y_n_amp: max y noise amplitude
+    :return z_n_grid: noisy z_grid
+    """
+
+    z_func = interpolate.interp2d(x_grid[0], y_grid[:, 0], z_grid)
+    x_n_grid = x_grid + (np.random.rand(len(x_grid), len(x_grid[0]))*2 - 1)*x_n_amp
+    y_n_grid = y_grid + (np.random.rand(len(y_grid), len(y_grid[0]))*2 - 1)*y_n_amp
+    x_coords = np.reshape(x_n_grid, (1, len(x_n_grid)*len(x_n_grid[0])))[0]
+    y_coords = np.reshape(y_n_grid, (1, len(y_n_grid)*len(y_n_grid[0])))[0]
+    z_n_coords = np.zeros(len(x_coords))
+    for i in np.arange(len(x_coords)):
+        z_n_coords[i] = z_func(x_coords[i], y_coords[i])
+    z_n_grid = np.reshape(z_n_coords, (len(x_grid), len(x_grid[0])))
+    return z_n_grid
 
 
 def calc_dft2(x, y, z, data):

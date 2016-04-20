@@ -10,6 +10,7 @@ import NF2FF.NF2FF as nf2ff
 import numpy as np
 import NF2FF.NFFFandFPlotting as plotting
 import matplotlib.pyplot as plt
+import scipy.interpolate as interpolate
 
 
 def import_ideal_farfield_data():
@@ -66,7 +67,7 @@ def import_ideal_nearfield_data():
                                                       verbose=True, pad_factor=pad_factor)
     U = nf2ff.calc_radiation_intensity(e_theta, e_phi)
 
-    return theta_grid, phi_grid, 10*np.log10(np.abs(U))
+    return theta_grid, phi_grid, 10*np.log10(np.abs(U)), x, y, ex, ey, x_points, y_points
 
 """General settings"""
 filename_nearfield = "WaveguideHorn80degx2sep.efe"
@@ -82,13 +83,29 @@ phi_lim = (0, np.pi)
 theta_steps = 101
 phi_steps = 101
 
+# Sweep settings
+planar_loc_error_lim = (0.01, 1)
+planar_loc_error_steps = 10
+
 """Start of script"""
 print("\nStarting pyNF2FF\n")
 theta_ff, phi_ff, gain_ff = import_ideal_farfield_data()
-theta_nf, phi_nf, gain_nf = import_ideal_nearfield_data()
+theta_nf, phi_nf, gain_nf, x, y, ex, ey, x_points, y_points = import_ideal_nearfield_data()
 
 norm_gain_ff = gain_ff - np.max(gain_ff)
 norm_gain_nf = gain_nf - np.max(gain_nf)
+norm_factor = np.max(gain_nf)
+
+print("Inject error into nearfield data")
+# Interpolate nearfield grid
+x_grid = rff.transform_data_coord_to_grid(x_points, y_points, x)
+y_grid = rff.transform_data_coord_to_grid(x_points, y_points, y)
+ex_grid = rff.transform_data_coord_to_grid(x_points, y_points, ex)
+ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
+ex_func = interpolate.interp2d(x, y, ex, kind='cubic')
+ey_func = interpolate.interp2d(x, y, ey, kind='cubic')
+# Generate noisy coords
+# Calculate corrupted nearfield
 
 print("Plotting data..."),
 if(False):
@@ -144,8 +161,8 @@ Localization error characterisation
 Sweep over frequency
     Read in ideal nearfield from feko -
     Read in ideal farfield from feko -
-    Calculate farfield from ideal nearfield data to find normalisation values
-    Define error injection boundaries (meters from ideal x and y)
+    Calculate farfield from ideal nearfield data to find normalisation values -
+    Define error injection boundaries (meters from ideal x and y) -
     Sweep over error amplitude:
         Inject error into ideal nearfield coordinates
         Create interpolated nearfield function from corrupted coordinate data
