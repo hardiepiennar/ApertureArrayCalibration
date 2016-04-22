@@ -409,16 +409,16 @@ def add_position_noise(x_grid, y_grid, z_grid, x_n_amp, y_n_amp):
     :return z_n_grid: noisy z_grid
     """
 
-    z_func_real = interpolate.interp2d(x_grid[0], y_grid[:, 0], np.real(z_grid))
-    z_func_imag = interpolate.interp2d(x_grid[0], y_grid[:, 0], np.imag(z_grid))
     x_n_grid = x_grid + (np.random.rand(len(x_grid), len(x_grid[0]))*2 - 1)*x_n_amp
     y_n_grid = y_grid + (np.random.rand(len(y_grid), len(y_grid[0]))*2 - 1)*y_n_amp
-    x_coords = np.reshape(x_n_grid, (1, len(x_n_grid)*len(x_n_grid[0])))[0]
-    y_coords = np.reshape(y_n_grid, (1, len(y_n_grid)*len(y_n_grid[0])))[0]
-    z_n_coords = np.zeros(len(x_coords), dtype=complex)
-    for i in np.arange(len(x_coords)):
-        z_n_coords[i] = complex(z_func_real(x_coords[i], y_coords[i])) + 1j*complex(z_func_imag(x_coords[i], y_coords[i]))
-    z_n_grid = np.reshape(z_n_coords, (len(x_grid), len(x_grid[0])))
+    x_coords = np.reshape(x_grid, (1, len(x_grid)*len(x_grid[0])))[0]
+    y_coords = np.reshape(y_grid, (1, len(y_grid)*len(y_grid[0])))[0]
+    z_coords = np.reshape(z_grid, (1, len(z_grid)*len(z_grid[0])))[0]
+    z_n_grid_real = interpolate.griddata((x_coords, y_coords), np.real(z_coords), (x_n_grid,y_n_grid), method='cubic')
+    z_n_grid_imag = interpolate.griddata((x_coords, y_coords), np.imag(z_coords), (x_n_grid,y_n_grid), method='cubic')
+
+    z_n_grid = z_n_grid_real + 1j*z_n_grid_imag
+
     return z_n_grid
 
 

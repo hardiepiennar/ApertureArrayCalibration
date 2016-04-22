@@ -390,9 +390,9 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(empl_test[2], empl[2])
 
     def test_add_position_noise(self):
-        x = np.array([[0, 1, 2], [0, 1, 2], [0, 1, 2]])
-        y = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
-        z = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
+        x = np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]])
+        y = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
+        z = np.array([[0, 1, 2, 0], [3, 4, 5, 0], [6, 7, 8, 0], [0, 0, 0, 0]])
         x_n_max = 0.1
         y_n_max = 0.1
 
@@ -400,12 +400,12 @@ class NF2FFTestCases(unittest.TestCase):
 
         max_error_length = np.sqrt(x_n_max**2 + y_n_max**2)*4
         # Test that error is still in bounds
-        self.assertGreaterEqual(z_n[0][0], z[0][0] - max_error_length)
-        self.assertLessEqual(z_n[0][0], z[0][0] + max_error_length)
-        self.assertGreaterEqual(z_n[1][0], z[1][0] - max_error_length)
-        self.assertLessEqual(z_n[1][0], z[1][0] + max_error_length)
-        self.assertGreaterEqual(z_n[-1][-1], z[-1][-1] - max_error_length)
-        self.assertLessEqual(z_n[-1][-1], z[-1][-1] + max_error_length)
+        self.assertGreaterEqual(z_n[1][1], z[1][1] - max_error_length)
+        self.assertLessEqual(z_n[1][1], z[1][1] + max_error_length)
+        self.assertGreaterEqual(z_n[1][2], z[1][2] - max_error_length)
+        self.assertLessEqual(z_n[1][2], z[1][2] + max_error_length)
+        self.assertGreaterEqual(z_n[2][1], z[2][1] - max_error_length)
+        self.assertLessEqual(z_n[2][1], z[2][1] + max_error_length)
 
         # Test that there is at-least some measure of error
         expression = z[0][0] == z_n[0][0] and z[0][1] == z_n[0][1] and z[0][2] == z_n[0][2] and\

@@ -118,11 +118,6 @@ gain_nf_n = 10*np.log10(np.abs(nf2ff.calc_radiation_intensity(e_theta_nf_n, e_ph
 norm_gain_nf_n = gain_nf_n - norm_factor
 
 print("Plotting data..."),
-if(True):
-    plotting.plot_farfield_3d_cartesian(theta_ff, phi_ff, norm_gain_ff, "FEKO Farfield", zlim=[-50, 0])
-    plotting.plot_farfield_3d_spherical(theta_ff, phi_ff, norm_gain_ff, "FEKO Farfield")
-    plotting.plot_farfield_3d_cartesian(theta_nf, phi_nf, norm_gain_nf, "Transformed Farfield", zlim=[-50, 0])
-    plotting.plot_farfield_3d_spherical(theta_nf, phi_nf, norm_gain_nf, "Transformed Farfield")
 
 if(True):
     h_cut_nf = rff.get_phi_cut_from_grid_data(np.floor(phi_steps/2), norm_gain_nf)
@@ -135,7 +130,7 @@ if(True):
     plt.title("E-Plane comparison (phi="+str(phi_ff[0][0])+")")
     plt.plot(np.rad2deg(theta_nf[0]), e_cut_nf)
     plt.plot(np.rad2deg(theta_ff[0]), e_cut_ff)
-    #plt.plot(np.rad2deg(theta_ff[0]), e_cut_nf_n)
+    plt.plot(np.rad2deg(theta_ff[0]), e_cut_nf_n)
     plt.xlim(-90, 90)
     plt.ylim(-60, 0)
     plt.grid(True)
@@ -147,7 +142,6 @@ if(True):
     plt.title("H-Plane comparison (phi="+str(phi_ff[np.floor(phi_steps/2)][0])+")")
     plt.plot(np.rad2deg(theta_nf[0]), h_cut_nf)
     plt.plot(np.rad2deg(theta_ff[0]), h_cut_ff)
-    #:w
     # plt.plot(np.rad2deg(theta_ff[0]), h_cut_nf_n)
     plt.xlim(-90, 90)
     plt.ylim(-60, 0)
@@ -156,6 +150,12 @@ if(True):
     plt.axvline(60)
     plt.axvline(-80)
     plt.axvline(80)
+
+if(False):
+    plotting.plot_farfield_3d_cartesian(theta_ff, phi_ff, norm_gain_ff, "FEKO Farfield", zlim=[-50, 0])
+    plotting.plot_farfield_3d_spherical(theta_ff, phi_ff, norm_gain_ff, "FEKO Farfield")
+    plotting.plot_farfield_3d_cartesian(theta_nf, phi_nf, norm_gain_nf, "Transformed Farfield", zlim=[-50, 0])
+    plotting.plot_farfield_3d_spherical(theta_nf, phi_nf, norm_gain_nf, "Transformed Farfield")
 print("[DONE]")
 
 plt.show()
@@ -164,11 +164,18 @@ plt.show()
 # TODO: Program comparison vectors
 # TODO: Decide on comparison methodology
 # TODO: Decide on errors to focus on
-# TODO: Write error injection code
 # TODO: Write parameter sweep code
 # TODO: Run comparisons for all error types
 # TODO: Refactor NFFFandFPlotting
 # TODO: Add some 2D phase unwrapping?
+
+"""
+Generate large nearfield dataset with lambda/10 points
+Interpolate dataset and extract clean lamda/2 points for ideal nearfield (calc_clean_farfield)
+Generate typical multicopter paths with noise (gen_multicopter_flight_path)
+Interpolate multicopter measurements
+Grid multicopter measurements into lambda/2 grid for transformation (grid_multicopter_scan)
+"""
 
 """
 Localization error characterisation
