@@ -57,9 +57,6 @@ def import_ideal_nearfield_data():
                                                                           ex, ey, ez)
     frequency = f[frequency_block*x_points*y_points]
 
-    print("Inject some noise EXPERIMENTAL")
-    ex += np.random.rand(len(ex))*0.001
-    ey += np.random.rand(len(ex))*0.001
 
     print("Transforming NF2FF transform")
     theta_grid, phi_grid, e_theta, e_phi = nf2ff.calc_nf2ff_from_coord_data(frequency, x_points, y_points, x, y, ex, ey,
@@ -67,11 +64,14 @@ def import_ideal_nearfield_data():
                                                       verbose=True, pad_factor=pad_factor)
     U = nf2ff.calc_radiation_intensity(e_theta, e_phi)
 
-    return theta_grid, phi_grid, 10*np.log10(np.abs(U)), x, y, ex, ey, x_points, y_points
+    return theta_grid, phi_grid, 10*np.log10(np.abs(U)), frequency, x, y, ex, ey, x_points, y_points
+
 
 """General settings"""
-filename_nearfield = "WaveguideHorn80degx2sep.efe"
-filename_farfield = "WaveguideHorn.ffe"
+#filename_nearfield = "WaveguideHorn80deg.efe"
+#filename_farfield = "WaveguideHorn.ffe"
+filename_nearfield = "Dipole88deg.efe"
+filename_farfield = "Dipole.ffe"
 separation = 0.0899377374000528
 frequency_block = 0  # Select the first frequency block in the file
 pad_factor = 4
@@ -84,17 +84,17 @@ theta_steps = 101
 phi_steps = 101
 
 # Sweep settings
-planar_loc_error_lim = (0.01, 1)
+planar_loc_error_lim = (0*(3e8/1e9)/10, 1)
 planar_loc_error_steps = 10
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
 theta_ff, phi_ff, gain_ff = import_ideal_farfield_data()
-theta_nf, phi_nf, gain_nf, x, y, ex, ey, x_points, y_points = import_ideal_nearfield_data()
+theta_nf, phi_nf, gain_nf, f, x, y, ex, ey, x_points, y_points = import_ideal_nearfield_data()
 
 norm_gain_ff = gain_ff - np.max(gain_ff)
-norm_gain_nf = gain_nf - np.max(gain_nf)
 norm_factor = np.max(gain_nf)
+norm_gain_nf = gain_nf - norm_factor
 
 print("Inject error into nearfield data")
 # Interpolate nearfield grid
@@ -102,27 +102,40 @@ x_grid = rff.transform_data_coord_to_grid(x_points, y_points, x)
 y_grid = rff.transform_data_coord_to_grid(x_points, y_points, y)
 ex_grid = rff.transform_data_coord_to_grid(x_points, y_points, ex)
 ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
-ex_func = interpolate.interp2d(x, y, ex, kind='cubic')
-ey_func = interpolate.interp2d(x, y, ey, kind='cubic')
-# Generate noisy coords
+
 # Calculate corrupted nearfield
+x_n_amp = planar_loc_error_lim[0]
+y_n_amp = planar_loc_error_lim[0]
+ex_n_grid = nf2ff.add_position_noise(x_grid, y_grid, ex_grid, x_n_amp, y_n_amp)
+ey_n_grid = nf2ff.add_position_noise(x_grid, y_grid, ey_grid, x_n_amp, y_n_amp)
+ex_n = np.reshape(ex_n_grid, (1, len(ex_n_grid)*len(ex_n_grid[0])))[0]
+ey_n = np.reshape(ey_n_grid, (1, len(ey_n_grid)*len(ey_n_grid[0])))[0]
+
+# Calculate corrupted farfield
+theta_n_grid, phi_n_grid, e_theta_nf_n, e_phi_nf_n = nf2ff.calc_nf2ff_from_coord_data(f, x_points, y_points, x, y, ex_n, ey_n,
+                                                            theta_steps, phi_steps, theta_lim, phi_lim)
+gain_nf_n = 10*np.log10(np.abs(nf2ff.calc_radiation_intensity(e_theta_nf_n, e_phi_nf_n)))
+norm_gain_nf_n = gain_nf_n - norm_factor
 
 print("Plotting data..."),
-if(False):
-    plotting.plot_farfield_3d_cartesian(theta_ff, phi_ff, gain_ff, "FEKO Farfield")
-    plotting.plot_farfield_3d_spherical(theta_ff, phi_ff, gain_ff, "FEKO Farfield")
-    plotting.plot_farfield_3d_cartesian(theta_nf, phi_nf, gain_nf, "Transformed Farfield")
-    plotting.plot_farfield_3d_spherical(theta_nf, phi_nf, gain_nf, "Transformed Farfield")
+if(True):
+    plotting.plot_farfield_3d_cartesian(theta_ff, phi_ff, norm_gain_ff, "FEKO Farfield", zlim=[-50, 0])
+    plotting.plot_farfield_3d_spherical(theta_ff, phi_ff, norm_gain_ff, "FEKO Farfield")
+    plotting.plot_farfield_3d_cartesian(theta_nf, phi_nf, norm_gain_nf, "Transformed Farfield", zlim=[-50, 0])
+    plotting.plot_farfield_3d_spherical(theta_nf, phi_nf, norm_gain_nf, "Transformed Farfield")
 
 if(True):
-    h_cut_nf = rff.get_phi_cut_from_grid_data(50, norm_gain_nf)
-    h_cut_ff = rff.get_phi_cut_from_grid_data(50, norm_gain_ff)
+    h_cut_nf = rff.get_phi_cut_from_grid_data(np.floor(phi_steps/2), norm_gain_nf)
+    h_cut_ff = rff.get_phi_cut_from_grid_data(np.floor(phi_steps/2), norm_gain_ff)
+    h_cut_nf_n = rff.get_phi_cut_from_grid_data(np.floor(phi_steps/2), norm_gain_nf_n)
     e_cut_nf = rff.get_phi_cut_from_grid_data(0, norm_gain_nf)
     e_cut_ff = rff.get_phi_cut_from_grid_data(0, norm_gain_ff)
+    e_cut_nf_n = rff.get_phi_cut_from_grid_data(0, norm_gain_nf_n)
     plt.figure()
     plt.title("E-Plane comparison (phi="+str(phi_ff[0][0])+")")
     plt.plot(np.rad2deg(theta_nf[0]), e_cut_nf)
     plt.plot(np.rad2deg(theta_ff[0]), e_cut_ff)
+    #plt.plot(np.rad2deg(theta_ff[0]), e_cut_nf_n)
     plt.xlim(-90, 90)
     plt.ylim(-60, 0)
     plt.grid(True)
@@ -131,9 +144,11 @@ if(True):
     plt.axvline(-80)
     plt.axvline(80)
     plt.figure()
-    plt.title("H-Plane comparison (phi="+str(phi_ff[50][0])+")")
+    plt.title("H-Plane comparison (phi="+str(phi_ff[np.floor(phi_steps/2)][0])+")")
     plt.plot(np.rad2deg(theta_nf[0]), h_cut_nf)
     plt.plot(np.rad2deg(theta_ff[0]), h_cut_ff)
+    #:w
+    # plt.plot(np.rad2deg(theta_ff[0]), h_cut_nf_n)
     plt.xlim(-90, 90)
     plt.ylim(-60, 0)
     plt.grid(True)
