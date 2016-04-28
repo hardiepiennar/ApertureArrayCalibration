@@ -398,7 +398,7 @@ class NF2FFTestCases(unittest.TestCase):
 
         z_n = nf2ff.add_position_noise(x, y, z, x_n_max, y_n_max)
 
-        max_error_length = np.sqrt(x_n_max**2 + y_n_max**2)*4
+        max_error_length = np.sqrt(x_n_max**2 + y_n_max**2)*8
         # Test that error is still in bounds
         self.assertGreaterEqual(z_n[1][1], z[1][1] - max_error_length)
         self.assertLessEqual(z_n[1][1], z[1][1] + max_error_length)
@@ -413,6 +413,38 @@ class NF2FFTestCases(unittest.TestCase):
             z[2][0] == z_n[2][0] and z[2][1] == z_n[2][1] and z[2][2] == z_n[2][2]
         self.assertFalse(expression)
 
+    def test_probe_nearfield(self):
+        x = np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]])
+        y = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
+        z = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
+
+        x_new = np.array([0.0, 0.0, 0.0, 1.5, 3, 3, 3])
+        y_new = np.array([0.0, 1.5, 3, 3, 3, 1.5, 0.0])
+        z_new = nf2ff.probe_nearfield(x, y, z, x_new, y_new)
+
+        z_new_test = np.array([0, 1.5, 3, 3, 3, 1.5, 0])
+        self.assertAlmostEqual(z_new_test[0], z_new[0])
+        self.assertAlmostEqual(z_new_test[1], z_new[1])
+        self.assertAlmostEqual(z_new_test[2], z_new[2])
+        self.assertAlmostEqual(z_new_test[3], z_new[3])
+        self.assertAlmostEqual(z_new_test[4], z_new[4])
+        self.assertAlmostEqual(z_new_test[5], z_new[5])
+        self.assertAlmostEqual(z_new_test[6], z_new[6])
+
+    def test_gen_scan_path(self):
+        x_lim = (0,1)
+        y_lim = (0,0.6)
+        wavelength = 0.5
+        sample_interval = 0.2
+
+        scan_coords_x, scan_coords_y = nf2ff.generate_planar_scanpath(x_lim, y_lim, wavelength, sample_interval)
+
+        test_scan_coords_x = np.array([0, 0, 0, 0, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.5, 0.75, 0.75, 0.75, 0.75, 1, 1, 1, 1])
+        test_scan_coords_y = np.array([0, 0.2, 0.4, 0.6, 0, 0.2, 0.4, 0.6, 0, 0.2, 0.4, 0.6, 0, 0.2, 0.4, 0.6, 0, 0.2, 0.4, 0.6])
+
+        for i in np.arange(len(test_scan_coords_x)):
+            self.assertAlmostEqual(test_scan_coords_x[i], scan_coords_x[i])
+            self.assertAlmostEqual(test_scan_coords_y[i], scan_coords_y[i])
 
     def end(self):
         pass

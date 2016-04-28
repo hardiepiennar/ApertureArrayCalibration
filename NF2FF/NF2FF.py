@@ -422,6 +422,48 @@ def add_position_noise(x_grid, y_grid, z_grid, x_n_amp, y_n_amp):
     return z_n_grid
 
 
+def probe_nearfield(x_grid, y_grid, z_grid, x_coords, y_coords):
+    """
+    Interpolate a given nearfield and probe this nearfield at the given points
+    :param x: position x of original nearfield
+    :param y: position y of original nearfield
+    :param z: nearfield to interpolate
+    :param x_new: x positions to probe
+    :param y_new: y positions to probe
+    :return z_new: probed nearfield
+    """
+    z_grid_real = interpolate.RectBivariateSpline(x_grid[0], y_grid[:, 0], np.real(z_grid)).ev(y_coords,x_coords)
+    z_grid_imag = interpolate.RectBivariateSpline(x_grid[0], y_grid[:, 0], np.imag(z_grid)).ev(y_coords,x_coords)
+
+    z_new_coords = z_grid_real + 1j*z_grid_imag
+
+
+    return z_new_coords
+
+
+def generate_planar_scanpath(x_lim, y_lim, wavelength, sample_interval):
+    """
+    Generates the ideal x y coordinates of a flight path for a planar nearfield scan
+    :param x_lim: x limits of the flight
+    :param y_lim: y limits of the flight
+    :param wavelength: wavelength of the measurement
+    :param sample_interval: sample interval of the instrument
+    :return x_coords, y_coords: coordinate data of the ideal flight path
+    """
+    x_coords = []
+    y_coords = []
+    y_length = np.abs(y_lim[1] - y_lim[0])
+    x_length = np.abs(x_lim[1] - x_lim[0])
+    y_points = np.ceil(y_length/sample_interval) + 1
+    x_points = np.ceil(x_length/(wavelength/2)) + 1
+    #generate first line
+
+    for i in np.linspace(x_lim[0], x_lim[1], x_points):
+        x_coords = x_coords + list(np.ones(y_points)*i)
+        y_coords = y_coords + list(np.linspace(y_lim[0], y_lim[1], y_points))
+
+    return x_coords, y_coords
+
 def calc_dft2(x, y, z, data):
     """
     Calculates the disctrete fourier transform for the given 2D data
