@@ -390,39 +390,64 @@ class NF2FFTestCases(unittest.TestCase):
         self.assertEqual(empl_test[2], empl[2])
 
     def test_add_position_noise(self):
-        x = np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]])
-        y = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
-        z = np.array([[0, 1, 2, 0], [3, 4, 5, 0], [6, 7, 8, 0], [0, 0, 0, 0]])
+        x = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3])
+        y = np.array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3])
         x_n_max = 0.1
         y_n_max = 0.1
 
-        z_n = nf2ff.add_position_noise(x, y, z, x_n_max, y_n_max)
+        x_n, y_n = nf2ff.add_position_noise(x, y, x_n_max, y_n_max)
 
-        max_error_length = np.sqrt(x_n_max**2 + y_n_max**2)*8
+        max_error_length = np.sqrt(x_n_max**2 + y_n_max**2)
         # Test that error is still in bounds
-        self.assertGreaterEqual(z_n[1][1], z[1][1] - max_error_length)
-        self.assertLessEqual(z_n[1][1], z[1][1] + max_error_length)
-        self.assertGreaterEqual(z_n[1][2], z[1][2] - max_error_length)
-        self.assertLessEqual(z_n[1][2], z[1][2] + max_error_length)
-        self.assertGreaterEqual(z_n[2][1], z[2][1] - max_error_length)
-        self.assertLessEqual(z_n[2][1], z[2][1] + max_error_length)
+        self.assertGreaterEqual(x_n[1], x[1] - max_error_length)
+        self.assertLessEqual(x_n[1], x[1] + max_error_length)
+        self.assertGreaterEqual(x_n[2], x[2] - max_error_length)
+        self.assertLessEqual(y_n[2], y[2] + max_error_length)
+        self.assertGreaterEqual(y_n[2], y[2] - max_error_length)
+        self.assertLessEqual(y_n[2], y[2] + max_error_length)
 
         # Test that there is at-least some measure of error
-        expression = z[0][0] == z_n[0][0] and z[0][1] == z_n[0][1] and z[0][2] == z_n[0][2] and\
-            z[1][0] == z_n[1][0] and z[1][1] == z_n[1][1] and z[1][2] == z_n[1][2] and\
-            z[2][0] == z_n[2][0] and z[2][1] == z_n[2][1] and z[2][2] == z_n[2][2]
+        expression = x[0] == x_n[0] and x[1] == x_n[1] and x[2] == x_n[2] and\
+            x[3] == x_n[3] and x[4] == x_n[4] and x[5] == x_n[5] and\
+            x[6] == x_n[6] and x[7] == x_n[7] and x[8] == x_n[8]
         self.assertFalse(expression)
+        expression = y[0] == y_n[0] and y[1] == y_n[1] and y[2] == y_n[2] and \
+                     y[3] == y_n[3] and y[4] == y_n[4] and y[5] == y_n[5] and \
+                     y[6] == y_n[6] and y[7] == y_n[7] and y[8] == y_n[8]
+        self.assertFalse(expression)
+
+    def test_grid_flight_data(self):
+        x_coords = np.array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3])
+        y_coords = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3])
+        z_coords = np.array([1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 2, 2, 0, 0, 0, 0])
+        grid_x = np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]])
+        grid_y = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
+
+        z_grid = nf2ff.grid_flight_data(grid_x, grid_y, x_coords, y_coords, z_coords)
+
+        self.assertAlmostEquals(z_grid[0][0], 1)
+        self.assertAlmostEquals(z_grid[0][1], 0)
+        self.assertAlmostEquals(z_grid[0][2], 1)
+        self.assertAlmostEquals(z_grid[0][3], 0)
+        self.assertAlmostEquals(z_grid[1][0], 1)
+        self.assertAlmostEquals(z_grid[1][1], 0)
+        self.assertAlmostEquals(z_grid[1][2], 1)
+        self.assertAlmostEquals(z_grid[1][3], 0)
+        self.assertAlmostEquals(z_grid[2][0], 1)
+        self.assertAlmostEquals(z_grid[2][1], 0)
+        self.assertAlmostEquals(z_grid[2][2], 2)
+        self.assertAlmostEquals(z_grid[2][3], 0)
 
     def test_probe_nearfield(self):
         x = np.array([[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]])
         y = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
-        z = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]])
+        z = np.array([[0, 0, 0, 1], [1, 1, 1, 2], [2, 2, 2, 3], [3, 3, 3, 4]])
 
         x_new = np.array([0.0, 0.0, 0.0, 1.5, 3, 3, 3])
-        y_new = np.array([0.0, 1.5, 3, 3, 3, 1.5, 0.0])
+        y_new = np.array([0.0, 1.5, 3, 3, 3, 2.5, 1])
         z_new = nf2ff.probe_nearfield(x, y, z, x_new, y_new)
 
-        z_new_test = np.array([0, 1.5, 3, 3, 3, 1.5, 0])
+        z_new_test = np.array([0, 1.5, 3, 2.9375, 4, 3.5, 2])
         self.assertAlmostEqual(z_new_test[0], z_new[0])
         self.assertAlmostEqual(z_new_test[1], z_new[1])
         self.assertAlmostEqual(z_new_test[2], z_new[2])

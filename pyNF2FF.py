@@ -53,7 +53,7 @@ theta_steps = 101
 phi_steps = 101
 
 # Sweep settings
-planar_loc_error_lim = ((3e8/1e9), 1)
+planar_loc_error_lim = (0*(3e8/1e9)/10, 1)
 planar_loc_error_steps = 10
 
 # Flight path settings
@@ -108,7 +108,7 @@ theta_grid, phi_grid = nf2ff.generate_spherical_theta_phi_grid(theta_steps, phi_
 
 e_theta, e_phi = nf2ff.calc_nf2ff(frequency, x_grid, y_grid, ex_grid, ey_grid, 10000, theta_grid, phi_grid)
 
-gain_nf = nf2ff.calc_radiation_intensity(e_theta, e_phi)
+gain_nf = 10*np.log10(np.abs(nf2ff.calc_radiation_intensity(e_theta, e_phi)))
 
 norm_gain_ff = gain_ff - np.max(gain_ff)
 norm_factor = np.max(gain_nf)
@@ -120,18 +120,45 @@ x_grid = rff.transform_data_coord_to_grid(x_points, y_points, x)
 y_grid = rff.transform_data_coord_to_grid(x_points, y_points, y)
 ex_grid = rff.transform_data_coord_to_grid(x_points, y_points, ex)
 ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
+"""
+x = np.array([-2, -1, 0, 1, 2])
+y = np.array([-2, -1, 0, 1, 2])
+x_grid, y_grid = np.meshgrid(x, y)
+ex_grid = np.array([[1,0,1,0,1],
+                    [0,1,0,1,0],
+                    [1,0,1,0,1],
+                    [0,1,0,1,0],
+                    [1,0,1,0,1]])
+ey_grid = np.array([[1,0,1,0,1],
+                    [0,1,0,1,0],
+                    [1,0,1,0,1],
+                    [0,1,0,1,0],
+                    [1,0,1,0,1]])
+                    """
 
-# Generate flight path
+# Generate noisy flight path (Vehicle thinks it is on the ideal path, however it is actually sampling on the noisy
+# coordinates)
 x_lim = (np.min(x_grid), np.max(x_grid))
 y_lim = (np.min(y_grid), np.max(y_grid))
 wavelength = nf2ff.calc_freespace_wavelength(frequency)
-x_coords, y_coords = nf2ff.generate_planar_scanpath(x_lim, y_lim, wavelength, wavelength/2)
+x_coords, y_coords = nf2ff.generate_planar_scanpath(x_lim, y_lim, wavelength/2, wavelength/4)
+x_n_coords, y_n_coords = nf2ff.add_position_noise(x_coords, y_coords, 0,0)
 
+# Sample noisy flight path points
+ex_n_coords = nf2ff.probe_nearfield(x_grid, y_grid, ex_grid, x_n_coords, y_n_coords)
+ey_n_coords = nf2ff.probe_nearfield(x_grid, y_grid, ey_grid, x_n_coords, y_n_coords)
 
+# Use the noisy data to interpolate lamda/2 grid for nf2ff transformation
+ex_n_grid = nf2ff.grid_flight_data(x_grid, y_grid, x_coords, y_coords, ex_n_coords)
+ey_n_grid = nf2ff.grid_flight_data(x_grid, y_grid, x_coords, y_coords, ey_n_coords)
+
+"""
 plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(ex_grid), "Flight path")
-plt.scatter(x_coords, y_coords)
+plt.scatter(x_n_coords, y_n_coords, c=np.abs(ex_n_coords), s=50)#, edgecolor='')
+plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(ex_n_grid), "Flight path")
 plt.show()
 exit()
+"""
 
 """
 # Calculate corrupted nearfield
@@ -141,13 +168,12 @@ ex_n_grid = nf2ff.add_position_noise(x_grid, y_grid, ex_grid, x_n_amp, y_n_amp)
 ey_n_grid = nf2ff.add_position_noise(x_grid, y_grid, ey_grid, x_n_amp, y_n_amp)
 ex_n = np.reshape(ex_n_grid, (1, len(ex_n_grid)*len(ex_n_grid[0])))[0]
 ey_n = np.reshape(ey_n_grid, (1, len(ey_n_grid)*len(ey_n_grid[0])))[0]
-
-# Calculate corrupted farfield
-theta_n_grid, phi_n_grid, e_theta_nf_n, e_phi_nf_n = nf2ff.calc_nf2ff_from_coord_data(f, x_points, y_points, x, y, ex_n, ey_n,
-                                                            theta_steps, phi_steps, theta_lim, phi_lim)
-gain_nf_n = 10*np.log10(np.abs(nf2ff.calc_radiation_intensity(e_theta_nf_n, e_phi_nf_n)))
-norm_gain_nf_n = gain_nf_n - norm_factor
 """
+# Calculate corrupted farfield
+e_theta_n_grid, e_phi_n_grid = nf2ff.calc_nf2ff(frequency, x_grid, y_grid, ex_n_grid, ey_n_grid, 10000, theta_grid, phi_grid)
+
+gain_nf_n = 10*np.log10(np.abs(nf2ff.calc_radiation_intensity(e_theta_n_grid, e_phi_n_grid)))
+norm_gain_nf_n = gain_nf_n - norm_factor
 
 print("Plotting data..."),
 
@@ -160,10 +186,10 @@ if(True):
     e_cut_nf_n = rff.get_phi_cut_from_grid_data(0, norm_gain_nf_n)
     print(e_cut_nf_n)
     plt.figure()
-    plt.title("E-Plane comparison (phi="+str(phi_ff[0][0])+")")
-    plt.plot(np.rad2deg(theta_nf[0]), e_cut_nf)
-    plt.plot(np.rad2deg(theta_ff[0]), e_cut_ff)
-    plt.plot(np.rad2deg(theta_ff[0]), e_cut_nf_n)
+    plt.title("E-Plane comparison (phi="+str(phi_grid_ff[0][0])+")")
+    plt.plot(np.rad2deg(theta_grid[0]), e_cut_nf)
+    plt.plot(np.rad2deg(theta_grid_ff[0]), e_cut_ff)
+    plt.plot(np.rad2deg(theta_grid_ff[0]), e_cut_nf_n)
     plt.xlim(-90, 90)
     plt.ylim(-60, 0)
     plt.grid(True)
@@ -172,10 +198,10 @@ if(True):
     plt.axvline(-80)
     plt.axvline(80)
     plt.figure()
-    plt.title("H-Plane comparison (phi="+str(phi_ff[np.floor(phi_steps/2)][0])+")")
-    plt.plot(np.rad2deg(theta_nf[0]), h_cut_nf)
-    plt.plot(np.rad2deg(theta_ff[0]), h_cut_ff)
-    plt.plot(np.rad2deg(theta_ff[0]), h_cut_nf_n)
+    plt.title("H-Plane comparison (phi="+str(phi_grid_ff[np.floor(phi_steps/2)][0])+")")
+    plt.plot(np.rad2deg(theta_grid[0]), h_cut_nf)
+    plt.plot(np.rad2deg(theta_grid_ff[0]), h_cut_ff)
+    plt.plot(np.rad2deg(theta_grid_ff[0]), h_cut_nf_n)
     plt.xlim(-90, 90)
     plt.ylim(-60, 0)
     plt.grid(True)

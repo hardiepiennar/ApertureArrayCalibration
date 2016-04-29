@@ -397,29 +397,39 @@ def interpolate_cartesian_to_spherical(kx_grid, ky_grid, fe_grid, wavenumber, th
     return fe_spherical
 
 
-def add_position_noise(x_grid, y_grid, z_grid, x_n_amp, y_n_amp):
+def add_position_noise(x, y, x_n_amp, y_n_amp):
     """
     Add noise to data by probing interpolated z-grid at noisy coordinates and rebuilding z grid as an equally spaced
     grid with the noisy probe points
-    :param x_grid: 2D matrix grid of x coordinates
-    :param y_grid: 2D matrix grid of y coordinates
-    :param z_grid: 2D matrix grid of function to make noisy
+    :param x: x coordinates
+    :param y: y coordinates
     :param x_n_amp: max x noise amplitude
     :param y_n_amp: max y noise amplitude
-    :return z_n_grid: noisy z_grid
+    :return x_n, y_n: noisy coords
     """
 
-    x_n_grid = x_grid + (np.random.rand(len(x_grid), len(x_grid[0]))*2 - 1)*x_n_amp
-    y_n_grid = y_grid + (np.random.rand(len(y_grid), len(y_grid[0]))*2 - 1)*y_n_amp
-    x_coords = np.reshape(x_grid, (1, len(x_grid)*len(x_grid[0])))[0]
-    y_coords = np.reshape(y_grid, (1, len(y_grid)*len(y_grid[0])))[0]
-    z_coords = np.reshape(z_grid, (1, len(z_grid)*len(z_grid[0])))[0]
-    z_n_grid_real = interpolate.griddata((x_coords, y_coords), np.real(z_coords), (x_n_grid,y_n_grid), method='cubic')
-    z_n_grid_imag = interpolate.griddata((x_coords, y_coords), np.imag(z_coords), (x_n_grid,y_n_grid), method='cubic')
+    x_n = x + (np.random.rand(len(x))*2 - 1)*x_n_amp
+    y_n = y + (np.random.rand(len(y))*2 - 1)*y_n_amp
 
-    z_n_grid = z_n_grid_real + 1j*z_n_grid_imag
+    return x_n, y_n
 
-    return z_n_grid
+
+def grid_flight_data(grid_x, grid_y, x_coords, y_coords, z_coords):
+    """
+    Grids coordinate data into a specified rectangular grid
+    :param grid_x: 2D matrix of grid coordinates
+    :param grid_y: 2D matrix of grid coordinates
+    :param x_coords: x-coords for z values
+    :param y_coords: y-coords for z values
+    :param z_coords: z values to grid
+    :return z grid: 2D matrix of z on given grid coordinates
+    """
+
+    grid_z_real = interpolate.griddata((x_coords, y_coords), np.real(z_coords), (grid_x, grid_y), method='cubic')
+    grid_z_imag = interpolate.griddata((x_coords, y_coords), np.imag(z_coords), (grid_x, grid_y), method='cubic')
+    grid_z = grid_z_real + 1j*grid_z_imag
+
+    return grid_z
 
 
 def probe_nearfield(x_grid, y_grid, z_grid, x_coords, y_coords):
@@ -432,8 +442,8 @@ def probe_nearfield(x_grid, y_grid, z_grid, x_coords, y_coords):
     :param y_new: y positions to probe
     :return z_new: probed nearfield
     """
-    z_grid_real = interpolate.RectBivariateSpline(x_grid[0], y_grid[:, 0], np.real(z_grid)).ev(y_coords,x_coords)
-    z_grid_imag = interpolate.RectBivariateSpline(x_grid[0], y_grid[:, 0], np.imag(z_grid)).ev(y_coords,x_coords)
+    z_grid_real = interpolate.RectBivariateSpline(x_grid[0], y_grid[:, 0], np.real(z_grid)).ev(y_coords, x_coords)
+    z_grid_imag = interpolate.RectBivariateSpline(x_grid[0], y_grid[:, 0], np.imag(z_grid)).ev(y_coords, x_coords)
 
     z_new_coords = z_grid_real + 1j*z_grid_imag
 
