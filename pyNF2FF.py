@@ -36,12 +36,15 @@ def import_ideal_nearfield_data():
     return theta_grid, phi_grid, 10*np.log10(np.abs(U)), frequency, x, y, ex, ey, x_points, y_points
 
 
+
+
 """General settings"""
 #filename_nearfield = "WaveguideHorn80deg.efe"
 #filename_farfield = "WaveguideHorn.ffe"
-filename_nearfield = "Dipole80deg_lambda_10.efe"
+filename_nearfield = "Dipole_80deg_lambda_10_low.efe"
+filename_nearfield_ptp = "Dipole_80deg_lambda_10_high.efe"
 filename_farfield = "Dipole.ffe"
-separation = 0.0899377374000528
+separation = 0.899377374000528
 frequency_block = 0  # Select the first frequency block in the file
 pad_factor = 4
 
@@ -53,11 +56,112 @@ theta_steps = 101
 phi_steps = 101
 
 # Sweep settings
-planar_loc_error_lim = (0*(3e8/1e9)/10, 1)
+planar_loc_error_lim = ((3e8/1e9)/2, 1)
 planar_loc_error_steps = 10
 
 # Flight path settings
 sample_interval = 0.01
+ptp_antenna_spacing = 0.5
+
+"""Test the ptp transform"""
+print("Importing nearfield data from " + filename_nearfield)
+f, x, y, z, ex, ey, ez, coord_structure = rff.read_fekonearfield_datafile(filename_nearfield)
+print("Separation:  "+str(round(separation, 3))+" m\n")
+
+# Assuming an equally spaced 2D grid calculate grid properties (only 1 z-layer is currently permitted)
+delta = np.abs(x[1]-x[0])
+x_points = coord_structure[1]
+y_points = coord_structure[2]
+
+print("Extracting block: "+str(frequency_block)+" from imported dataset\n")
+x, y, z, ex, ey, ez = rff.read_frequency_block_from_nearfield_dataset(frequency_block, coord_structure, x, y, z,
+                                                                      ex, ey, ez)
+frequency = f[frequency_block*x_points*y_points]
+x_grid = rff.transform_data_coord_to_grid(x_points, y_points, x)
+y_grid = rff.transform_data_coord_to_grid(x_points, y_points, y)
+ex_grid = rff.transform_data_coord_to_grid(x_points, y_points, ex)
+ey_grid = rff.transform_data_coord_to_grid(x_points, y_points, ey)
+
+print("Importing nearfield data from " + filename_nearfield_ptp)
+f, x, y, z, ex, ey, ez, coord_structure = rff.read_fekonearfield_datafile(filename_nearfield_ptp)
+print("Separation:  "+str(round(separation, 3))+" m\n")
+
+# Assuming an equally spaced 2D grid calculate grid properties (only 1 z-layer is currently permitted)
+delta = np.abs(x[1]-x[0])
+x_points = coord_structure[1]
+y_points = coord_structure[2]
+
+print("Extracting block: "+str(frequency_block)+" from imported dataset\n")
+x, y, z, ex, ey, ez = rff.read_frequency_block_from_nearfield_dataset(frequency_block, coord_structure, x, y, z,
+                                                                      ex, ey, ez)
+ex_grid_2_p = rff.transform_data_coord_to_grid(x_points, y_points, ex)
+ey_grid_2_p = rff.transform_data_coord_to_grid(x_points, y_points, ey)
+
+# This is what we have... lets get that phase
+ex_grid_1 = np.abs(ex_grid)
+ey_grid_1 = np.abs(ey_grid)
+ex_grid_2 = np.abs(ex_grid_2_p)
+ey_grid_2 = np.abs(ey_grid_2_p)
+
+wavenumber = nf2ff.calc_freespace_wavenumber(frequency)
+theta = np.arctan(np.sqrt(x_grid**2 + y_grid**2)/separation)
+kz = wavenumber*np.cos(theta)
+
+N = 10000
+plane1 = ex_grid_1*np.exp(1j*np.angle(ex_grid)/2)
+for i in np.arange(N):
+    plane2 = np.fft.ifft2(np.fft.fft2(plane1)*np.exp(-1j*kz*(ptp_antenna_spacing)))
+    plane2 = np.abs(ex_grid_2)*np.exp(1j*np.angle(plane2))
+    plane1 = np.fft.ifft2(np.fft.fft2(plane2)*np.exp(1j*kz*(ptp_antenna_spacing)))
+    error = np.sum(np.abs(np.abs(plane1) - np.abs(ex_grid_1)))
+    print(str(i)+"  "+str(error))
+    if i  < N-1:
+        plane1 = np.abs(ex_grid_1)*np.exp(1j*np.angle(plane1))
+
+plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(plane1), title="PTP")
+plt.xlim(-5,5)
+plt.ylim(-5,5)
+plt.show()
+exit()
+
+plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(ex_grid_2_p), title="plane 2")
+plt.xlim(-5,5)
+plt.ylim(-5,5)
+plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(ex_grid), title="plane 1")
+plt.xlim(-5,5)
+plt.ylim(-5,5)
+plt.show()
+exit()
+
+
+# PTP algorithm
+wavenumber = nf2ff.calc_freespace_wavenumber(frequency)
+ey_ptp = ey_grid#*np.exp(1j*(np.cos(0.5*wavenumber*(np.sqrt(x_grid**2+y_grid**2)))))
+N = 10
+for i in np.arange(N):
+    plotting.plot_nearfield_2d(x_grid,y_grid, np.abs(ey_ptp), title="layer 1")
+    ex_ptp = np.fft.fft2(np.fft.ifft2(ey_ptp)*np.exp(-1j*wavenumber*ptp_antenna_spacing))
+    error = (np.abs(np.abs(ey_ptp) - np.abs(ey_grid_2)))
+    #plotting.plot_nearfield_2d(x_grid,y_grid, error, title="error")
+    plotting.plot_nearfield_2d(x_grid,y_grid, np.abs(ey_ptp), title="ptp layer 2")
+    plotting.plot_nearfield_2d(x_grid,y_grid, np.abs(ey_grid_2), title="layer 2")
+    plt.show()
+    exit()
+    ex_ptp = np.abs(ex_grid_2)*np.exp(1j*np.angle(ex_ptp))
+    ex_ptp = np.fft.fft2(np.fft.ifft2(ex_ptp)*np.exp(1j*wavenumber*ptp_antenna_spacing))
+    #calculate error
+    error = np.sum(np.abs(np.abs(ex_ptp) - np.abs(ex_grid_1)))
+    if(i < N-1):
+        ex_ptp = np.abs(ex_grid_1)*np.exp(1j*np.angle(ex_ptp))
+    print(str(i)+"  "+str(error))
+
+plotting.plot_nearfield_2d(x_grid,y_grid, np.abs(ex_grid), title="real")
+plotting.plot_nearfield_2d(x_grid,y_grid, np.abs(ex_ptp), title="ptp")
+plotting.plot_nearfield_2d(x_grid,y_grid, np.angle(ex_grid), title="real")
+plotting.plot_nearfield_2d(x_grid,y_grid, np.angle(ex_ptp), title="ptp")
+plt.show()
+
+exit()
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
@@ -142,23 +246,24 @@ x_lim = (np.min(x_grid), np.max(x_grid))
 y_lim = (np.min(y_grid), np.max(y_grid))
 wavelength = nf2ff.calc_freespace_wavelength(frequency)
 x_coords, y_coords = nf2ff.generate_planar_scanpath(x_lim, y_lim, wavelength/2, wavelength/4)
-x_n_coords, y_n_coords = nf2ff.add_position_noise(x_coords, y_coords, 0,0)
+x_n_coords, y_n_coords = nf2ff.add_position_noise(x_coords, y_coords, planar_loc_error_lim[0],planar_loc_error_lim[0])
 
 # Sample noisy flight path points
 ex_n_coords = nf2ff.probe_nearfield(x_grid, y_grid, ex_grid, x_n_coords, y_n_coords)
 ey_n_coords = nf2ff.probe_nearfield(x_grid, y_grid, ey_grid, x_n_coords, y_n_coords)
 
 # Use the noisy data to interpolate lamda/2 grid for nf2ff transformation
-ex_n_grid = nf2ff.grid_flight_data(x_grid, y_grid, x_coords, y_coords, ex_n_coords)
-ey_n_grid = nf2ff.grid_flight_data(x_grid, y_grid, x_coords, y_coords, ey_n_coords)
+ex_n_grid = nf2ff.grid_flight_data(x_grid, y_grid, x_coords, y_coords, (ex_n_coords))
+ey_n_grid = nf2ff.grid_flight_data(x_grid, y_grid, x_coords, y_coords, (ey_n_coords))
+#ex_n_grid *= np.exp(1j*np.angle(ex_grid))
+#ey_n_grid *= np.exp(1j*np.angle(ey_grid))
 
-"""
+
 plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(ex_grid), "Flight path")
-plt.scatter(x_n_coords, y_n_coords, c=np.abs(ex_n_coords), s=50)#, edgecolor='')
+plt.scatter(x_n_coords, y_n_coords, c=np.abs(ex_n_coords), s=10)#, edgecolor='')
 plotting.plot_nearfield_2d(x_grid, y_grid, np.abs(ex_n_grid), "Flight path")
-plt.show()
-exit()
-"""
+#plt.show()
+#exit()
 
 """
 # Calculate corrupted nearfield
