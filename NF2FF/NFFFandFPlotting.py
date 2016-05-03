@@ -75,7 +75,7 @@ def plot_nearfield_2d(x, y, e, title, zlim=[-1, -1]):
 
     cax = ax.imshow(data, extent=extents, vmin=v_limits)
     ax.contour(data, v_ticks, extent=extents, vmin=v_limits, colors='k', origin='upper')
-    #fig.colorbar(cax, ticks=v_ticks, orientation='horizontal')
+    fig.colorbar(cax, ticks=v_ticks, orientation='horizontal')
 
     ax.set_aspect("auto")
     fig.set_tight_layout(True)
