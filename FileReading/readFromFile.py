@@ -242,6 +242,71 @@ def read_fekonearfield_datafile(filename, verbose=False):
     return f, x, y, z, ex, ey, ez, [no_f_samples, no_ex_samples, no_ey_samples, no_ez_samples]
 
 
+def write_farfield_gain_datafile(filename, theta_grid, phi_grid, gain_grid):
+    """
+    Write a 2D dataset for a farfield
+    :param filename:
+    :param theta_grid:
+    :param phi_grid:
+    :param gain_grid:
+    :return:
+    """
+    with open(filename, 'w') as csvfile:
+        writer = csv.writer(csvfile, delimiter=' ')
+
+        # Write header
+        writer.writerow([len(theta_grid), len(theta_grid[0])])
+
+        # Flatten grid data
+        theta_coords = np.reshape(theta_grid, len(theta_grid)*len(theta_grid[0]))
+        phi_coords = np.reshape(phi_grid, len(phi_grid)*len(phi_grid[0]))
+        gain_coords = np.reshape(gain_grid, len(gain_grid)*len(gain_grid[0]))
+
+        for i in np.arange(len(theta_coords)):
+            writer.writerow([theta_coords[i], phi_coords[i], gain_coords[i]])
+
+
+def read_farfield_gain_datafile(filename):
+    """
+    Read a 2D farfield dataset
+    :param filename:
+    :return:
+    """
+    file_handle = open(filename)
+    reader = csv.reader(file_handle, delimiter=' ')
+
+    theta = []
+    phi = []
+    data = []
+
+    # Read header and body of file
+    line_no = 0
+    for row in reader:
+        string = '    '.join(row)
+        elements = string.split()
+        if line_no == 0:
+            width = float(elements[0])
+            height = float(elements[1])
+        else:
+            theta.append(float(elements[0]))
+            phi.append(float(elements[1]))
+            data.append(float(elements[2]))
+        line_no += 1
+
+    # Close file after reading
+    file_handle.close()
+
+    # Convert arrays to numpy array types
+    theta = np.array(theta)
+    phi = np.array(phi)
+    data = np.array(data)
+
+    theta_grid = np.reshape(theta, (width, height))
+    phi_grid = np.reshape(phi, (width, height))
+    gain_grid = np.reshape(data, (width, height))
+
+    return theta_grid, phi_grid, gain_grid
+
 def parse_angle_range_line(line):
     """
     Parse header line containing start, stop and number of steps

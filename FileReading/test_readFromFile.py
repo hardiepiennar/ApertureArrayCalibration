@@ -1,6 +1,8 @@
 import unittest
 
 import numpy as np
+import os
+import csv
 
 import readFromFile as rFF
 
@@ -48,6 +50,76 @@ class TestReadFarfieldFile(unittest.TestCase):
         self.assertEquals(int(0).__class__, f.__class__)
         self.assertEquals(float(0.0).__class__, tx_power.__class__)
         self.assertEquals(float(0.0).__class__, distance.__class__)
+
+    def test_writeFarfieldData(self):
+        # Open file and get variables
+        filename = "testWriteFile.dat"
+        theta_grid = np.array([[0, 1, 2], [0, 1, 2]])
+        phi_grid = np.array([[0, 0, 0], [1, 1, 1]])
+        gain_grid = np.array([[0, 1, 2], [3, 4, 5]])
+
+        if os._exists(filename):
+            os.remove(filename)
+
+        rFF.write_farfield_gain_datafile(filename, theta_grid, phi_grid, gain_grid)
+
+        file_handle = open(filename)
+        reader = csv.reader(file_handle, delimiter=' ')
+
+        theta = []
+        phi = []
+        data = []
+
+        # Read header and body of file
+        line_no = 0
+        for row in reader:
+            string = '    '.join(row)
+            elements = string.split()
+            if line_no == 0:
+                width = float(elements[0])
+                height = float(elements[1])
+            else:
+                theta.append(float(elements[0]))
+                phi.append(float(elements[1]))
+                data.append(float(elements[2]))
+            line_no += 1
+
+        # Close file after reading
+        file_handle.close()
+
+        # Convert arrays to numpy array types
+        theta = np.array(theta)
+        phi = np.array(phi)
+        data = np.array(data)
+
+        test_theta_grid = np.reshape(theta, (width, height))
+        test_phi_grid = np.reshape(phi, (width, height))
+        test_gain_grid = np.reshape(data, (width, height))
+
+        for y in np.arange(len(theta_grid)):
+            for x in np.arange(len(theta_grid[0])):
+                self.assertEqual(theta_grid[y][x], test_theta_grid[y][x])
+                self.assertEqual(phi_grid[y][x], test_phi_grid[y][x])
+                self.assertEqual(gain_grid[y][x], test_gain_grid[y][x])
+
+    def test_readFarfieldData(self):
+        # Open file and get variables
+        filename = "testWriteFile.dat"
+        theta_grid = np.array([[0, 1, 2], [0, 1, 2]])
+        phi_grid = np.array([[0, 0, 0], [1, 1, 1]])
+        gain_grid = np.array([[0, 1, 2], [3, 4, 5]])
+
+        if os._exists(filename):
+            os.remove(filename)
+
+        rFF.write_farfield_gain_datafile(filename, theta_grid, phi_grid, gain_grid)
+        test_theta_grid, test_phi_grid, test_gain_grid = rFF.read_farfield_gain_datafile(filename)
+
+        for y in np.arange(len(theta_grid)):
+            for x in np.arange(len(theta_grid[0])):
+                self.assertEqual(theta_grid[y][x], test_theta_grid[y][x])
+                self.assertEqual(phi_grid[y][x], test_phi_grid[y][x])
+                self.assertEqual(gain_grid[y][x], test_gain_grid[y][x])
 
 
 class TestReadFEKOFarfieldFile(unittest.TestCase):
