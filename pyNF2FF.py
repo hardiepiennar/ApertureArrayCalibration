@@ -196,6 +196,7 @@ def calc_nf2ff_error(filename_nearfield, filename_farfield, separation, frequenc
     return theta_grid, phi_grid, error
 
 """General settings"""
+frequency_file = "Dipole_85deg_400MHz"
 separation = 0.899377374000528
 frequency_block = 0  # Select the first frequency block in the file
 pad_factor = 4
@@ -208,60 +209,50 @@ theta_steps = 101
 phi_steps = 101
 
 # Sweep settings
-#planar_loc_error_lim = (1e-3, 0.25) # This simulates 1mm up to lambda/4 for 1.5GHz
-planar_loc_error_lim = (10, 4)
-planar_loc_error_steps = 6   # Use around 51 steps which will give us 10 samples at 1.5GHz before hitting lambda/4
+planar_loc_error_lim = (200, 4)  # Fraction of wavelength error
+planar_loc_error_steps = 51
 error_averages = 15  # 15 works well
 
 # Flight path settings
-sample_interval = 1*(3e8/1e9)/4
-row_spacing = 1*(3e8/1e9)/4
-ptp_antenna_spacing = 0.5
+#sample_interval = 1*(3e8/1e9)/4
+#row_spacing = 1*(3e8/1e9)/4
+#ptp_antenna_spacing = 0.5
 
 
 """Start of script"""
 print("\nStarting pyNF2FF\n")
-# Get list of nearfield files
-frequency_file_list = os.listdir("Nearfield/")
-frequency_file_list = frequency_file_list[::2]
-for i in np.arange(len(frequency_file_list)):
-    frequency_file_list[i] = frequency_file_list[i].split('.')[0]
+print("Simulating frequency file: "+str(frequency_file))
+for error in np.linspace(planar_loc_error_lim[0], planar_loc_error_lim[1], planar_loc_error_steps):
+    # Calculate the average and max error map a certain frequency and plane error amplitude
+    print(str(error)+"m error, "),
+    N = error_averages
+    print("averaging "+str(N)+" times: "),
+    for i in np.arange(N):
+        print(str(i+1)+", "),
+        theta_grid, phi_grid, error_map = calc_nf2ff_error("FEKOFields/"+frequency_file+".efe",
+                                                           "FEKOFields/"+frequency_file+".ffe",
+                                                           separation, # Not being used
+                                                           0,
+                                                           error, "Not used", plots=False, verbose=False)
+        if i == 0:
+            error_map_accum = error_map
+            error_map_max = error_map
+        else:
+            error_map_accum += error_map
+            error_map_max = np.maximum(error_map, error_map_max)
 
-for frequency_file in frequency_file_list:
-    print("Simulating frequency file: "+str(frequency_file))
-    for error in np.linspace(planar_loc_error_lim[0], planar_loc_error_lim[1], planar_loc_error_steps):
-        # Calculate the average error map a certain frequency and plane error amplitude
-        print(str(error)+"m error, "),
-        N = error_averages
-        print("averaging "+str(N)+" times: "),
-        for i in np.arange(N):
-            print(str(i+1)+", "),
-            theta_grid, phi_grid, error_map = calc_nf2ff_error("Nearfield/"+frequency_file+".efe",
-                                                               "Nearfield/"+frequency_file+".ffe",
-                                                               separation, # Not being used
-                                                               0,
-                                                               error, "Not used", plots=False, verbose=False)
-            if i == 0:
-                error_map_accum = error_map
-            else:
-                error_map_accum += error_map
-        error_map_avg = error_map_accum/N
-        rff.write_farfield_gain_datafile("ErrorFields/error_map_"+str(frequency_file)+"_"+str(error)+".dat",
-                                         theta_grid, phi_grid, error_map_avg)
-        print(str("[DONE]"))
+    error_map_avg = error_map_accum/N
+    rff.write_farfield_gain_datafile("ErrorFields/error_map_avg_"+str(frequency_file)+"_"+str(error)+".dat",
+                                     theta_grid, phi_grid, error_map_avg)
+    rff.write_farfield_gain_datafile("ErrorFields/error_map_max_"+str(frequency_file)+"_"+str(error)+".dat",
+                                     theta_grid, phi_grid, error_map_max)
+    print(str("[DONE]"))
+
+#Integrate the maps
+import ErrorMapProcessingScript as eps
+eps.run()
 
 
-
-error_map = error_map_avg
-
-#error_map[np.abs(theta_grid) > np.deg2rad(60)] = 0
-error_map[error_map == 0] = 0.0000000001
-plotting.plot_nearfield_2d(theta_grid,phi_grid,10*np.log10(error_map), "error",zlim=[-20,0])
-print("Max: "+str(np.max(error_map)))
-print("Min: "+str(np.min(error_map)))
-print("Ave: "+str(np.average(error_map)))
-
-plt.show()
 
 
 

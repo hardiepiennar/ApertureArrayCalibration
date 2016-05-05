@@ -336,7 +336,7 @@ def calc_empl(x1, x2):
     return empl_db
 
 
-def calc_radiated_power(theta_grid, phi_grid, U_grid):
+def calc_radiated_power(theta_grid, phi_grid, U_grid, theta_lim=[-1,-1], phi_lim=[-1,-1]):
     """
     Calculates the total radiated power W over the given theta phi grid
     :param theta_grid: theta 2D matrix grid of angles in rad
@@ -347,8 +347,12 @@ def calc_radiated_power(theta_grid, phi_grid, U_grid):
     I = U_grid
     I_interp = interpolate.interp2d(phi_grid[:, 0], theta_grid[0], I)
     I_func = lambda phi, theta: I_interp(phi, theta)*np.cos(theta)
-    theta_start, theta_stop = np.min(theta_grid), np.max(theta_grid)
-    phi_start, phi_stop = lambda theta: np.min(phi_grid), lambda theta: np.max(phi_grid)
+    if theta_lim[0] == -1 and theta_lim[1] == -1:
+        theta_start, theta_stop = np.min(theta_grid), np.max(theta_grid)
+        phi_start, phi_stop = lambda theta: np.min(phi_grid), lambda theta: np.max(phi_grid)
+    else:
+        theta_start, theta_stop = theta_lim[0], theta_lim[1]
+        phi_start, phi_stop = lambda theta: phi_lim[0], lambda theta: phi_lim[1]
     P_rad = integrate.dblquad(I_func, theta_start, theta_stop, phi_start, phi_stop)
 
     return P_rad
