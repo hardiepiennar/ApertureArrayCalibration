@@ -301,7 +301,8 @@ def plot_farfield_3d_cartesian(theta, phi, ampl, title, zlim=[-1,-1]):
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
-    ax.set_title(title)
+    if not title == "":
+        ax.set_title(title)
 
     if zlim[0] == -1 and zlim[1] == -1:
         ax.set_zlim(np.min(ampl), np.max(ampl))
@@ -313,12 +314,9 @@ def plot_farfield_3d_cartesian(theta, phi, ampl, title, zlim=[-1,-1]):
     surf = ax.plot_surface(np.rad2deg(theta), np.rad2deg(phi), ampl, rstride=1, cstride=1, cmap=cm.jet,
                            linewidth=0.5, antialiased=True, shade=False)
 
-    ax.set_xlabel("Theta [deg]")
-    ax.set_ylabel("Phi [deg]")
-    ax.zaxis.set_major_locator(LinearLocator(10))
-    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-
-    fig.colorbar(surf, shrink=0.5, aspect=5)
+    ax.set_xlabel("$\Theta$ [deg]")
+    ax.set_ylabel("$\phi$ [deg]")
+    return ax, fig
 
 
 def plot_farfield_3d_spherical(theta, phi, ampl, title, zlim=[-1,-1], dynamic_range=40):

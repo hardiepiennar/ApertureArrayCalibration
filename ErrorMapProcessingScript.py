@@ -10,7 +10,6 @@ import NF2FF.NF2FF as nf2ff
 import csv
 import os
 
-
 def run():
     # Global settings
     global_filename = "Dipole_85deg_400MHz"
@@ -26,9 +25,25 @@ def run():
     if(False):
         import os
         for filename in os.listdir(directory):
-            theta_grid, phi_grid, error_grid = rff.read_farfield_gain_datafile(directory+filename)
+            print(filename)
+            theta_grid, phi_grid, error_grid = rff.read_farfield_gain_datafile("ErrorFieldsFinal/"+filename)
+            theta_grid, phi_grid, avg_error_grid = rff.read_farfield_gain_datafile(directory+avg_filename)
+
             plotting.plot_nearfield_2d(theta_grid, phi_grid, 10*np.log10(error_grid), filename, zlim=[-25,0])
         plt.show()
+        exit()
+
+    if(True):
+        import os
+        i = 0
+        for error in np.linspace(planar_loc_error_lim[0], planar_loc_error_lim[1], planar_loc_error_steps):
+            avg_filename = "error_map_avg_"+global_filename+"_"+str(error)+".dat"
+            theta_grid, phi_grid, avg_error_grid = rff.read_farfield_gain_datafile(directory+avg_filename)
+
+            plotting.plot_nearfield_2d(theta_grid, phi_grid, 10*np.log10(avg_error_grid), error, zlim=[-25,0])
+            print(error)
+            plt.savefig("Animation/"+str(i))
+            i += 1
         exit()
 
     print("Extracting max and avg values from error maps:")
@@ -64,3 +79,5 @@ def run():
                 plotting.plot_nearfield_2d(theta_grid, phi_grid, 10*np.log10(avg_error_grid), "Avg: "+str(error), zlim=[-25,0])
                 plotting.plot_nearfield_2d(theta_grid, phi_grid, 10*np.log10(max_error_grid), "Max: "+str(error), zlim=[-25,0])
                 plt.show()
+
+run()
